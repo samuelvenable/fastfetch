@@ -12,8 +12,7 @@ const char* ffDetectMemory(FFMemoryResult* ram)
         return "ffReadFileData(\"/proc/meminfo\", ARRAY_SIZE(buf)-1, buf)";
     buf[nRead] = '\0';
 
-    uint64_t memTotal = 0,
-             memFree;
+    uint64_t memTotal = 0, memFree = 0;
 
     char *token = NULL;
     if((token = strstr(buf, "MemTotal:")) != NULL)
