@@ -1,6 +1,6 @@
 # Fastfetch
 
-Fastfetch fork with fixed RAM detection that actually matches top(1). 
+Fastfetch fork with bug-fixed RAM detection that actually matches top(1). 
 
 [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/fastfetch-cli/fastfetch/ci.yml)](https://github.com/fastfetch-cli/fastfetch/actions)
 [![GitHub license](https://img.shields.io/github/license/fastfetch-cli/fastfetch)](https://github.com/fastfetch-cli/fastfetch/blob/dev/LICENSE)
