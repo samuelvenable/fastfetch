@@ -21,7 +21,7 @@ const char* ffDetectMemory(FFMemoryResult* ram)
         + vmstat.wire_count
         + vmstat.inactive_count
         + vmstat.active_count
-        + vmstat.compressor_page_count;
+        + vmstat.compressor_page_count
     ) * instance.state.platform.sysinfo.pageSize;
 
     return NULL;
