@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12.0) # target_link_libraries with OBJECT libs & project homepage url
 
 project(fastfetch
-    VERSION 2.56.0
+    VERSION 2.56.1
     LANGUAGES C
     DESCRIPTION "Fast neofetch-like system information tool"
     HOMEPAGE_URL "https://github.com/fastfetch-cli/fastfetch"
@@ -1413,6 +1413,23 @@ elseif(GNU)
     target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE)
     # On Hurd PATH_MAX is not defined. Set an arbitrary limit as workaround.
     target_compile_definitions(libfastfetch PUBLIC PATH_MAX=4096)
+endif()
+
+if(WIN32)
+    check_function_exists(_msize HAVE_MSVC_MSIZE)
+    if(HAVE_MSVC_MSIZE)
+        target_compile_definitions(libfastfetch PUBLIC FF_HAVE_MSVC_MSIZE=1)
+    endif()
+else()
+    check_function_exists(malloc_usable_size HAVE_MALLOC_USABLE_SIZE)
+    if(HAVE_MALLOC_USABLE_SIZE)
+        target_compile_definitions(libfastfetch PUBLIC FF_HAVE_MALLOC_USABLE_SIZE=1)
+    else()
+        check_function_exists(malloc_size HAVE_MALLOC_SIZE)
+        if(HAVE_MALLOC_SIZE)
+            target_compile_definitions(libfastfetch PUBLIC FF_HAVE_MALLOC_SIZE=1)
+        endif()
+    endif()
 endif()
 
 if(FreeBSD OR OpenBSD OR NetBSD)
