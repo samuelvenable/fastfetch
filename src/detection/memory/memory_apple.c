@@ -16,13 +16,12 @@ const char* ffDetectMemory(FFMemoryResult* ram)
     if(host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t) (&vmstat), &count) != KERN_SUCCESS)
         return "Failed to read host_statistics64";
 
-    // https://github.com/apple-opensource/top/blob/e7979606cf63270663a62cfe69f82d35cef9ba58/globalstats.c#L433-L435
-    ram->bytesUsed = ((uint64_t)
-        + vmstat.wire_count
-        + vmstat.inactive_count
-        + vmstat.active_count
-        + vmstat.compressor_page_count
-    ) * instance.state.platform.sysinfo.pageSize;
+    // Match what the official top(1) command does: https://github.com/apple-opensource/top/blob/e7979606cf63270663a62cfe69f82d35cef9ba58/globalstats.c#L433-L435
+    ram->bytesUsed = ((uint64_t)vmstat.wire_count + vmstat.inactive_count + vmstat.active_count + vmstat.compressor_page_count) * instance.state.platform.sysinfo.pageSize;
+
+    // Match Activity Monitor: https://github.com/st3fan/osx-10.9/blob/34e34a6a539b5a822cda4074e56a7ced9b57da71/system_cmds-597.1.1/vm_stat.tproj/vm_stat.c#L139
+    ram->bytesUsed = ram->bytesTotal - ((uint64_t)(vmstat.free_count - vmstat.speculative_count) + vmstat.external_page_count) * instance.state.platform.sysinfo.pageSize;
+    // Comment out the above line to use top(1)'s method of getting memory used instead of Activity Monitor's method.
 
     return NULL;
 }
