@@ -3,13 +3,13 @@
 #include "common/settings.h"
 #include "common/properties.h"
 #include "common/parsing.h"
-#include "common/io/io.h"
+#include "common/io.h"
 #include "common/processing.h"
+#include "common/mallocHelper.h"
+#include "common/stringUtils.h"
+#include "common/binary.h"
 #include "detection/terminalshell/terminalshell.h"
 #include "detection/displayserver/displayserver.h"
-#include "util/mallocHelper.h"
-#include "util/stringUtils.h"
-#include "util/binary.h"
 
 static const char* getSystemMonospaceFont(void)
 {
@@ -288,6 +288,14 @@ static void detectXterm(FFTerminalFontResult* terminalFont)
     });
 
     if (fontName.length == 0)
+    {
+        ffParsePropFileHomeValues(".Xresources", 2, (FFpropquery[]) {
+            {"xterm.vt100.faceName:", &fontName},
+            {"xterm.vt100.faceSize:", &fontSize},
+        });
+    }
+
+    if (fontName.length == 0)
         ffStrbufAppendS(&fontName, "fixed");
     if (fontSize.length == 0)
         ffStrbufAppendS(&fontSize, "8.0");
@@ -454,6 +462,32 @@ static void detectUrxvt(FFTerminalFontResult* terminalFont)
     }
 }
 
+static bool detectCosmicTerm(FFTerminalFontResult* terminalFont)
+{
+    FF_STRBUF_AUTO_DESTROY fontName = ffStrbufCreate();
+    FF_STRBUF_AUTO_DESTROY fontSize = ffStrbufCreate();
+
+    FF_STRBUF_AUTO_DESTROY path = ffStrbufCreateCopy(&instance.state.platform.homeDir);
+    ffStrbufAppendS(&path, ".config/cosmic/com.system76.CosmicTerm/v1/");
+    uint32_t baseLen = path.length;
+
+    ffStrbufAppendS(&path, "font_name");
+    ffReadFileBuffer(path.chars, &fontName);
+    ffStrbufTrim(&path, '"');
+    ffStrbufSubstrBefore(&path, baseLen);
+    if (fontName.length == 0) ffStrbufSetStatic(&fontName, "Noto Sans Mono");
+
+    ffStrbufAppendS(&path, "font_size");
+    if (ffReadFileBuffer(path.chars, &fontSize))
+        ffStrbufAppendS(&fontSize, "px");
+    ffStrbufSubstrBefore(&path, baseLen);
+    if (fontSize.length == 0) ffStrbufSetStatic(&fontSize, "14px");
+
+    ffFontInitValues(&terminalFont->font, fontName.chars, fontSize.chars);
+
+    return true;
+}
+
 #ifdef __HAIKU__
 static void detectHaikuTerminal(FFTerminalFontResult* terminalFont)
 {
@@ -513,6 +547,8 @@ ffDetectTerminalFontPlatform
         detectTerminator(terminalFont);
     else if(ffStrbufStartsWithIgnCaseS(&terminal->processName, "sakura"))
         detectFromConfigFile("sakura/sakura.conf", "font=", terminalFont);
+    else if(ffStrbufStartsWithIgnCaseS(&terminal->processName, "cosmic-term"))
+        detectCosmicTerm(terminalFont);
     #ifdef __HAIKU__
     else if(ffStrbufStartsWithIgnCaseS(&terminal->processName, "Terminal"))
         detectHaikuTerminal(terminalFont);

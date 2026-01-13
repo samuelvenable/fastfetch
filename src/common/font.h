@@ -1,7 +1,7 @@
 #pragma once
 
-#include "util/FFstrbuf.h"
-#include "util/FFlist.h"
+#include "common/FFstrbuf.h"
+#include "common/FFlist.h"
 
 typedef struct FFfont
 {
