@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "common/debug.h"
 
 #include <string.h>
 #include <mach/mach.h>
