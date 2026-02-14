@@ -2,6 +2,7 @@
 #include "common/processing.h"
 #include "common/io.h"
 #include "common/windows/unicode.h"
+#include "common/windows/nt.h"
 
 #include <stdalign.h>
 #include <windows.h>
@@ -53,7 +54,7 @@ const char* ffProcessSpawn(char* const argv[], bool useStdErr, FFProcessHandle* 
 
     wchar_t pipeName[32];
     static unsigned pidCounter = 0;
-    swprintf(pipeName, ARRAY_SIZE(pipeName), L"\\\\.\\pipe\\FASTFETCH-%u-%u", GetCurrentProcessId(), ++pidCounter);
+    swprintf(pipeName, ARRAY_SIZE(pipeName), L"\\\\.\\pipe\\FASTFETCH-%u-%u", instance.state.platform.pid, ++pidCounter);
 
     FF_AUTO_CLOSE_FD HANDLE hChildPipeRead = CreateNamedPipeW(
         pipeName,
@@ -213,7 +214,7 @@ exit:
 bool ffProcessGetInfoWindows(uint32_t pid, uint32_t* ppid, FFstrbuf* pname, FFstrbuf* exe, const char** exeName, FFstrbuf* exePath, bool* gui)
 {
     FF_AUTO_CLOSE_FD HANDLE hProcess = pid == 0
-        ? GetCurrentProcess()
+        ? NtCurrentProcess()
         : OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
 
     if (hProcess == NULL)
@@ -236,6 +237,8 @@ bool ffProcessGetInfoWindows(uint32_t pid, uint32_t* ppid, FFstrbuf* pname, FFst
     }
     if(exe)
     {
+        // TODO: It's possible to query the command line with `NtQueryInformationProcess(60/*ProcessCommandLineInformation*/)` since Windows 8.1
+
         alignas(alignof(UNICODE_STRING)) uint8_t buffer[4096];
         ULONG size;
         if(NT_SUCCESS(NtQueryInformationProcess(hProcess, ProcessImageFileNameWin32, &buffer, sizeof(buffer), &size)))
