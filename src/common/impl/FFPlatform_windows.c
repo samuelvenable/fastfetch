@@ -209,7 +209,7 @@ static const char* detectWine(void)
 static void getSystemReleaseAndVersion(FFPlatformSysinfo* info)
 {
     RTL_OSVERSIONINFOW osVersion = { .dwOSVersionInfoSize = sizeof(osVersion) };
-    if (!NT_SUCCESS(RtlGetVersion(&osVersion)))
+    if (!NT_SUCCESS(RtlGetVersion(&osVersion))) // From PEB, not affected by manifest shenanigans
         return;
 
     FF_HKEY_AUTO_DESTROY hKey = NULL;
@@ -233,7 +233,7 @@ static void getSystemReleaseAndVersion(FFPlatformSysinfo* info)
         ffStrbufSetF(&info->name, "Wine_%s", wineVersion);
     else
     {
-        switch (osVersion.dwPlatformId)
+        switch (osVersion.dwPlatformId) // Hardcoded as WIN32_NT, but just in case
         {
         case VER_PLATFORM_WIN32s:
             ffStrbufSetStatic(&info->name, "WIN32s");
@@ -315,9 +315,11 @@ static void getSystemArchitecture(FFPlatformSysinfo* info)
 
 static void getCwd(FFPlatform* platform)
 {
+    #if _WIN64
     static_assert(
         offsetof(RTL_USER_PROCESS_PARAMETERS, Reserved2[5]) == 0x38,
         "CurrentDirectory should be at offset 0x38 in RTL_USER_PROCESS_PARAMETERS. Structure layout mismatch detected.");
+    #endif
     PCURDIR cwd = (PCURDIR) &NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters->Reserved2[5];
     ffStrbufSetNWS(&platform->cwd, cwd->DosPath.Length / sizeof(WCHAR), cwd->DosPath.Buffer);
     ffStrbufReplaceAllC(&platform->cwd, '\\', '/');
