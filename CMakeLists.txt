@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12.0) # target_link_libraries with OBJECT libs & project homepage url
 
 project(fastfetch
-    VERSION 2.59.0
+    VERSION 2.60.0
     LANGUAGES C
     DESCRIPTION "Fast neofetch-like system information tool"
     HOMEPAGE_URL "https://github.com/fastfetch-cli/fastfetch"
@@ -107,7 +107,7 @@ option(ENABLE_EMBEDDED_AMDGPUIDS "Embed amdgpu.ids into fastfetch, requires `pyt
 option(ENABLE_WORDEXP "Enable using of wordexp(3) if available, instead of glob(3)" ON)
 option(ENABLE_LIBZFS "Enable libzfs" ON)
 if(WIN32 AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-    option(ENABLE_WIN7_COMPAT "Enable Windows 7 compatibility" OFF)
+    option(ENABLE_WIN81_COMPAT "Enable legacy Windows compatibility (Windows 8.1 and later; Windows 7 unsupported)" ON)
 endif()
 if(APPLE)
     option(ENABLE_APPLE_MEMSIZE_USABLE "Use usable memory size as total memory size in Memory module, to match other systems" OFF)
@@ -168,8 +168,8 @@ endif()
 if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--tsaware -Wl,--build-id")
 
-    if(ENABLE_WIN7_COMPAT)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--subsystem,console,--major-os-version,6,--minor-os-version,1")
+    if(ENABLE_WIN81_COMPAT)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--subsystem,console,--major-os-version,6,--minor-os-version,3")
     else()
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--subsystem,console,--major-os-version,10,--minor-os-version,0")
     endif()
@@ -1462,12 +1462,6 @@ if(WIN32)
     if(HAVE_MSVC_MSIZE)
         target_compile_definitions(libfastfetch PUBLIC FF_HAVE_MSVC_MSIZE=1)
     endif()
-
-    if(ENABLE_WIN7_COMPAT)
-        target_compile_definitions(libfastfetch PUBLIC FF_WIN7_COMPAT=1)
-    else()
-        target_compile_definitions(libfastfetch PUBLIC FF_WIN7_COMPAT=0)
-    endif()
 else()
     check_function_exists(malloc_usable_size HAVE_MALLOC_USABLE_SIZE)
     if(HAVE_MALLOC_USABLE_SIZE)
@@ -1738,7 +1732,7 @@ elseif(WIN32)
         PRIVATE "winbrand"
         PRIVATE "secur32"
     )
-    if(NOT ENABLE_WIN7_COMPAT)
+    if(NOT ENABLE_WIN81_COMPAT)
         target_link_libraries(libfastfetch
             PRIVATE "mincore"
         )

@@ -1,3 +1,35 @@
+# 2.60.0
+
+Changes:
+* The CMake option `ENABLE_WIN7_COMPAT:BOOLEAN` is removed
+    * The lowest supported Windows version is now Windows 8.1
+    * Follows the Windows 7 deprecation notice introduced in v2.57.0
+* `wm.detectPlugin` now defaults to `true` (WM)
+
+Features:
+* Adds `{cwd}` for custom title formatting, which prints the current working directory (Title)
+* Adds support for detecting the Zed version (#2200, Editor)
+* Adds support for detecting `moss` packages (Packages, Linux)
+* Adds support for detecting komorebi, FancyWM, and GlazeWM (WM, Windows)
+* Adds support for WM plugin version detection on macOS (WM, macOS)
+* Adds support for retrieving the executable path on OpenBSD (#2195, OpenBSD)
+
+Bugfixes:
+* Fixes a potential segmentation fault caused by dereferencing a negative index (#2198)
+* Fixes `tempSensor` parsing so that it accepts only string values (#2202, CPU)
+* Fixes an issue which reports less devices unexpectedly (Keyboard, Linux)
+* Improves WM detection on LXQt by querying WM settings only when no WM has already been detected (#2199, WM, Linux)
+* Fixes memory leaks in DBus connection handling and in the OpenGL EGL context lifecycle
+* Fixes niri version detection on Fedora (WM, Linux)
+* Includes various internal cleanups and optimizations
+
+Logos:
+* Adds `RengeOS` (#2170)
+* Updates Linux Mint (#2186)
+* Adds `Emmabuntüs` (#2207)
+* Renames `Refracted Devuan` to `Refracta`
+* Renames `ExodiaPredator` to `ExodiaOS`
+
 # 2.59.0
 
 Changes:
@@ -35,7 +67,7 @@ Features:
 * Honors the `DBPath` and `RootDir` settings in `pacman.conf` when detecting Pacman packages (#2154, Packages, Linux)
 
 Bugfixes:
-* Fixes a crash issues on KDE Plasma 6.6 (Display, Linux)
+* Fixes a crash issue on KDE Plasma 6.6 (Display, Linux)
 * Fixes the Command module not working with `--dynamic-interval` (#2152, Command)
 * Fixes Quartz Compositor version detection. It now correctly reports the version of `WindowServer` (`SkyLight`) instead of `WindowManager`. (WM, macOS)
 
