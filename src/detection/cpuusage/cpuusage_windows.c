@@ -154,9 +154,9 @@ static const char* getInfoByPerflib(FFlist* cpuTimes)
 
 const char* ffGetCpuUsageInfo(FFlist* cpuTimes)
 {
-    const char* error;
+    const char* error = NULL;
 
-    if (SharedUserData->NtMajorVersion >= 10)
+    if (ffIsWindows10OrGreater())
     {
         error = getInfoByPerflib(cpuTimes);
         FF_DEBUG("Get CPU usage info by Perflib: %s", error ?: "success");

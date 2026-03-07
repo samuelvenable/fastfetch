@@ -4,10 +4,12 @@ Changes:
 * The CMake option `ENABLE_WIN7_COMPAT:BOOLEAN` is removed
     * The lowest supported Windows version is now Windows 8.1
     * Follows the Windows 7 deprecation notice introduced in v2.57.0
+* The CMake option `ENABLE_WIN7_COMPAT:BOOLEAN` now defaults to `OFF` and will be removed in v2.61.0, effectively dropping support for Windows 7 in the next release.
+    * This follows the Windows 7 deprecation notice introduced in v2.57.0.
 * `wm.detectPlugin` now defaults to `true` (WM)
 
 Features:
-* Adds `{cwd}` for custom title formatting, which prints the current working directory (Title)
+* Adds `{cwd}` for custom title formatting, which displays the current working directory (Title)
 * Adds support for detecting the Zed version (#2200, Editor)
 * Adds support for detecting `moss` packages (Packages, Linux)
 * Adds support for detecting komorebi, FancyWM, and GlazeWM (WM, Windows)
@@ -17,7 +19,7 @@ Features:
 Bugfixes:
 * Fixes a potential segmentation fault caused by dereferencing a negative index (#2198)
 * Fixes `tempSensor` parsing so that it accepts only string values (#2202, CPU)
-* Fixes an issue which reports less devices unexpectedly (Keyboard, Linux)
+* Fixes an issue that unexpectedly caused fewer devices to be reported (Keyboard, Linux)
 * Improves WM detection on LXQt by querying WM settings only when no WM has already been detected (#2199, WM, Linux)
 * Fixes memory leaks in DBus connection handling and in the OpenGL EGL context lifecycle
 * Fixes niri version detection on Fedora (WM, Linux)
@@ -25,8 +27,9 @@ Bugfixes:
 
 Logos:
 * Adds `RengeOS` (#2170)
-* Updates Linux Mint (#2186)
 * Adds `Emmabuntüs` (#2207)
+* Updates Artix Linux (#2157)
+* Updates Linux Mint (#2186)
 * Renames `Refracted Devuan` to `Refracta`
 * Renames `ExodiaPredator` to `ExodiaOS`
 
