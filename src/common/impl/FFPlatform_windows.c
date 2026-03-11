@@ -1,12 +1,12 @@
 #include "FFPlatform_private.h"
 #include "common/io.h"
 #include "common/library.h"
-#include "common/mallocHelper.h"
 #include "common/stringUtils.h"
 #include "common/windows/unicode.h"
 #include "common/windows/registry.h"
 #include "common/windows/nt.h"
 
+#include <stdalign.h>
 #include <windows.h>
 #include <shlobj.h>
 #include <sddl.h>
@@ -145,30 +145,18 @@ static void getUserName(FFPlatform* platform)
 
     size = ARRAY_SIZE(buffer);
     if (GetUserNameW(buffer, &size)) // GetUserNameExW(10002)?
-    {
         ffStrbufSetWS(&platform->userName, buffer);
-
-        size = 0;
-        DWORD refDomainSize = 0;
-        SID_NAME_USE sidNameUse = SidTypeUnknown;
-        LookupAccountNameW(NULL, buffer, NULL, &size, NULL, &refDomainSize, &sidNameUse);
-        if (size > 0)
-        {
-            FF_AUTO_FREE PSID sid = (PSID) malloc(size);
-            FF_AUTO_FREE LPWSTR refDomain = (LPWSTR) malloc(refDomainSize * sizeof(wchar_t));
-            if (LookupAccountNameW(NULL, buffer, sid, &size, refDomain, &refDomainSize, &sidNameUse))
-            {
-                LPWSTR sidString;
-                if (ConvertSidToStringSidW(sid, &sidString))
-                {
-                    ffStrbufSetWS(&platform->sid, sidString);
-                    LocalFree(sidString);
-                }
-            }
-        }
-    }
     else
         ffStrbufSetS(&platform->userName, getenv("USERNAME"));
+
+    alignas(TOKEN_USER) char buf[SECURITY_MAX_SID_SIZE + sizeof(TOKEN_USER)];
+    if (NT_SUCCESS(NtQueryInformationToken(NtCurrentProcessToken(), TokenUser, buf, sizeof(buf), &size)))
+    {
+        TOKEN_USER* tokenUser = (TOKEN_USER*) buf;
+        UNICODE_STRING sidString = { .Buffer = buffer, .Length = 0, .MaximumLength = sizeof(buffer) };
+        if (NT_SUCCESS(RtlConvertSidToUnicodeString(&sidString, tokenUser->User.Sid, FALSE)))
+            ffStrbufSetNWS(&platform->sid, sidString.Length / sizeof(wchar_t), sidString.Buffer);
+    }
 }
 
 static void getHostName(FFPlatform* platform)
@@ -298,11 +286,12 @@ static void getSystemArchitecture(FFPlatformSysinfo* info)
 
 static void getCwd(FFPlatform* platform)
 {
-    #if _WIN64
     static_assert(
-        offsetof(RTL_USER_PROCESS_PARAMETERS, Reserved2[5]) == 0x38,
-        "CurrentDirectory should be at offset 0x38 in RTL_USER_PROCESS_PARAMETERS. Structure layout mismatch detected.");
-    #endif
+        offsetof(RTL_USER_PROCESS_PARAMETERS, Reserved2[5]) == sizeof(ULONG) * 5 + sizeof(HANDLE) * 4
+        #if __amd64__ || __aarch64__
+            + sizeof(ULONG) // Padding
+        #endif
+        , "Structure layout mismatch detected.");
     PCURDIR cwd = (PCURDIR) &NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters->Reserved2[5];
     ffStrbufSetNWS(&platform->cwd, cwd->DosPath.Length / sizeof(WCHAR), cwd->DosPath.Buffer);
     ffStrbufReplaceAllC(&platform->cwd, '\\', '/');
@@ -311,7 +300,8 @@ static void getCwd(FFPlatform* platform)
 
 void ffPlatformInitImpl(FFPlatform* platform)
 {
-    platform->pid = (uint32_t) GetCurrentProcessId();
+    static_assert(offsetof(TEB, Reserved1[8]) == sizeof(NT_TIB) + sizeof(PVOID) /*EnvironmentPointer*/, "Structure layout mismatch detected.");
+    platform->pid = (uint32_t) (uintptr_t) ((CLIENT_ID*) &NtCurrentTeb()->Reserved1[8])->UniqueProcess;
     getExePath(platform);
     getCwd(platform);
     getHomeDir(platform);
