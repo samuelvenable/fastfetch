@@ -17,20 +17,29 @@
 static void getExePath(FFPlatform* platform)
 {
     wchar_t exePathW[MAX_PATH];
-    DWORD exePathWLen = GetModuleFileNameW(NULL, exePathW, MAX_PATH);
-    if (exePathWLen == 0 || exePathWLen >= MAX_PATH) return;
 
-    FF_AUTO_CLOSE_FD HANDLE hPath = CreateFileW(exePathW, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    FF_AUTO_CLOSE_FD HANDLE hPath = CreateFileW(
+        ffGetProcessParams()->ImagePathName.Buffer,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
     if (hPath != INVALID_HANDLE_VALUE)
     {
         DWORD len = GetFinalPathNameByHandleW(hPath, exePathW, MAX_PATH, FILE_NAME_OPENED);
         if (len > 0 && len < MAX_PATH)
-            exePathWLen = len;
+        {
+            ffStrbufSetNWS(&platform->exePath, len, exePathW);
+            if (ffStrbufStartsWithS(&platform->exePath, "\\\\?\\"))
+                ffStrbufSubstrAfter(&platform->exePath, 3);
+        }
     }
 
-    ffStrbufSetNWS(&platform->exePath, exePathWLen, exePathW);
-    if (ffStrbufStartsWithS(&platform->exePath, "\\\\?\\"))
-        ffStrbufSubstrAfter(&platform->exePath, 3);
+    if (platform->exePath.length == 0)
+        ffStrbufSetNWS(&platform->exePath, ffGetProcessParams()->ImagePathName.Length / 2, ffGetProcessParams()->ImagePathName.Buffer);
+
     ffStrbufReplaceAllC(&platform->exePath, '\\', '/');
 }
 
@@ -196,21 +205,22 @@ static const char* detectWine(void)
 
 static void getSystemReleaseAndVersion(FFPlatformSysinfo* info)
 {
-    FF_HKEY_AUTO_DESTROY hKey = NULL;
+    FF_AUTO_CLOSE_FD HANDLE hKey = NULL;
     if(!ffRegOpenKeyForRead(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", &hKey, NULL))
         return;
 
     uint32_t ubr = 0;
-    ffRegReadUint(hKey, L"UBR", &ubr, NULL);
+    ffRegReadValues(hKey, 2, (FFRegValueArg[]) {
+        FF_ARG(ubr, L"UBR"),
+        FF_ARG(info->version, L"BuildLabEx"),
+    }, NULL);
 
-    ffStrbufAppendF(&info->release,
+    ffStrbufSetF(&info->release,
         "%u.%u.%u.%u",
         (unsigned) SharedUserData->NtMajorVersion,
         (unsigned) SharedUserData->NtMinorVersion,
         (unsigned) SharedUserData->NtBuildNumber,
         (unsigned) ubr);
-
-    ffRegReadStrbuf(hKey, L"BuildLabEx", &info->version, NULL);
 
     const char* wineVersion = detectWine();
     if (wineVersion)
@@ -286,13 +296,7 @@ static void getSystemArchitecture(FFPlatformSysinfo* info)
 
 static void getCwd(FFPlatform* platform)
 {
-    static_assert(
-        offsetof(RTL_USER_PROCESS_PARAMETERS, Reserved2[5]) == sizeof(ULONG) * 5 + sizeof(HANDLE) * 4
-        #if __amd64__ || __aarch64__
-            + sizeof(ULONG) // Padding
-        #endif
-        , "Structure layout mismatch detected.");
-    PCURDIR cwd = (PCURDIR) &NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters->Reserved2[5];
+    PCURDIR cwd = &ffGetProcessParams()->CurrentDirectory;
     ffStrbufSetNWS(&platform->cwd, cwd->DosPath.Length / sizeof(WCHAR), cwd->DosPath.Buffer);
     ffStrbufReplaceAllC(&platform->cwd, '\\', '/');
     ffStrbufEnsureEndsWithC(&platform->cwd, '/');

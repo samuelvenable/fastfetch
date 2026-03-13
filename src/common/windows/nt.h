@@ -913,3 +913,188 @@ NTSYSAPI NTSTATUS NTAPI NtCreateEvent(
     _In_ EVENT_TYPE EventType,
     _In_ BOOLEAN InitialState
 );
+
+NTSYSAPI NTSTATUS NTAPI NtQueryAttributesFile(
+    _In_ PCOBJECT_ATTRIBUTES ObjectAttributes,
+    _Out_ PFILE_BASIC_INFORMATION FileInformation
+);
+
+NTSYSAPI NTSTATUS NTAPI RtlUnicodeToUTF8N(
+    _Out_writes_bytes_to_(UTF8StringMaxByteCount, *UTF8StringActualByteCount) PCHAR UTF8StringDestination,
+    _In_ ULONG UTF8StringMaxByteCount,
+    _Out_opt_ PULONG UTF8StringActualByteCount,
+    _In_reads_bytes_(UnicodeStringByteCount) PCWCH UnicodeStringSource,
+    _In_ ULONG UnicodeStringByteCount
+);
+
+NTSYSAPI NTSTATUS NTAPI RtlUTF8ToUnicodeN(
+    _Out_writes_bytes_to_(UnicodeStringMaxByteCount, *UnicodeStringActualByteCount) PWSTR UnicodeStringDestination,
+    _In_ ULONG UnicodeStringMaxByteCount,
+    _Out_opt_ PULONG UnicodeStringActualByteCount,
+    _In_reads_bytes_(UTF8StringByteCount) PCCH UTF8StringSource,
+    _In_ ULONG UTF8StringByteCount
+);
+
+#define RTL_MAX_DRIVE_LETTERS 32
+typedef struct _RTL_DRIVE_LETTER_CURDIR
+{
+    USHORT Flags;
+    USHORT Length;
+    ULONG TimeStamp;
+    STRING DosPath;
+} RTL_DRIVE_LETTER_CURDIR, *PRTL_DRIVE_LETTER_CURDIR;
+
+typedef struct _RTL_USER_PROCESS_PARAMETERS_FULL
+{
+    ULONG MaximumLength;
+    ULONG Length;
+
+    ULONG Flags;
+    ULONG DebugFlags;
+
+    HANDLE ConsoleHandle;
+    ULONG ConsoleFlags;
+    HANDLE StandardInput;
+    HANDLE StandardOutput;
+    HANDLE StandardError;
+
+    CURDIR CurrentDirectory;
+    UNICODE_STRING DllPath;
+    UNICODE_STRING ImagePathName;
+    UNICODE_STRING CommandLine;
+    PVOID Environment;
+
+    ULONG StartingX;
+    ULONG StartingY;
+    ULONG CountX;
+    ULONG CountY;
+    ULONG CountCharsX;
+    ULONG CountCharsY;
+    ULONG FillAttribute;
+
+    ULONG WindowFlags;
+    ULONG ShowWindowFlags;
+    UNICODE_STRING WindowTitle;
+    UNICODE_STRING DesktopInfo;
+    UNICODE_STRING ShellInfo;
+    UNICODE_STRING RuntimeData;
+    RTL_DRIVE_LETTER_CURDIR CurrentDirectories[RTL_MAX_DRIVE_LETTERS];
+
+    // Windows Vista
+    ULONG_PTR EnvironmentSize;
+    // Windows 7
+    ULONG_PTR EnvironmentVersion;
+
+    // Windows 8
+    PVOID PackageDependencyData;
+    ULONG ProcessGroupId;
+
+    // ...
+} RTL_USER_PROCESS_PARAMETERS_FULL;
+
+static inline RTL_USER_PROCESS_PARAMETERS_FULL* ffGetProcessParams()
+{
+    return (RTL_USER_PROCESS_PARAMETERS_FULL*) NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters;
+}
+
+NTSYSAPI NTSTATUS NTAPI RtlExpandEnvironmentStrings(
+    _In_opt_ PVOID Environment,
+    _In_reads_(SourceLength) PCWSTR Source,
+    _In_ SIZE_T SourceLength,
+    _Out_writes_(DestinationLength) PWSTR Destination,
+    _In_ SIZE_T DestinationLength,
+    _Out_opt_ PSIZE_T ReturnLength
+);
+
+NTSYSAPI NTSTATUS NTAPI NtOpenKey(
+    _Out_ PHANDLE KeyHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_ POBJECT_ATTRIBUTES ObjectAttributes
+);
+
+typedef enum _KEY_VALUE_INFORMATION_CLASS
+{
+    KeyValueBasicInformation, // KEY_VALUE_BASIC_INFORMATION
+    KeyValueFullInformation, // KEY_VALUE_FULL_INFORMATION
+    KeyValuePartialInformation, // KEY_VALUE_PARTIAL_INFORMATION
+    KeyValueFullInformationAlign64, // KEY_VALUE_FULL_INFORMATION_ALIGN64
+    KeyValuePartialInformationAlign64,  // KEY_VALUE_PARTIAL_INFORMATION_ALIGN64
+    KeyValueLayerInformation, // KEY_VALUE_LAYER_INFORMATION
+    MaxKeyValueInfoClass
+} KEY_VALUE_INFORMATION_CLASS;
+
+NTSYSAPI NTSTATUS NTAPI NtQueryValueKey(
+    _In_ HANDLE KeyHandle,
+    _In_ PCUNICODE_STRING ValueName,
+    _In_ KEY_VALUE_INFORMATION_CLASS KeyValueInformationClass,
+    _Out_writes_bytes_to_opt_(Length, *ResultLength) PVOID KeyValueInformation,
+    _In_ ULONG Length,
+    _Out_ PULONG ResultLength
+);
+
+NTSYSAPI NTSTATUS NTAPI RtlFormatCurrentUserKeyPath(
+    _Out_ PUNICODE_STRING CurrentUserKeyPath
+);
+
+typedef struct _KEY_VALUE_PARTIAL_INFORMATION
+{
+    ULONG TitleIndex;
+    ULONG Type;
+    ULONG DataLength;
+    _Field_size_bytes_(DataLength) UCHAR Data[];
+} KEY_VALUE_PARTIAL_INFORMATION, *PKEY_VALUE_PARTIAL_INFORMATION;
+
+typedef enum _KEY_INFORMATION_CLASS
+{
+    KeyBasicInformation, // KEY_BASIC_INFORMATION
+    KeyNodeInformation, // KEY_NODE_INFORMATION
+    KeyFullInformation, // KEY_FULL_INFORMATION
+    KeyNameInformation, // KEY_NAME_INFORMATION
+    KeyCachedInformation, // KEY_CACHED_INFORMATION
+    KeyFlagsInformation, // KEY_FLAGS_INFORMATION
+    KeyVirtualizationInformation, // KEY_VIRTUALIZATION_INFORMATION
+    KeyHandleTagsInformation, // KEY_HANDLE_TAGS_INFORMATION
+    KeyTrustInformation, // KEY_TRUST_INFORMATION
+    KeyLayerInformation, // KEY_LAYER_INFORMATION
+    MaxKeyInfoClass
+} KEY_INFORMATION_CLASS;
+
+NTSYSAPI NTSTATUS NTAPI NtEnumerateKey(
+    _In_ HANDLE KeyHandle,
+    _In_ ULONG Index,
+    _In_ KEY_INFORMATION_CLASS KeyInformationClass,
+    _Out_writes_bytes_to_opt_(Length, *ResultLength) PVOID KeyInformation,
+    _In_ ULONG Length,
+    _Out_ PULONG ResultLength
+);
+
+typedef struct _KEY_BASIC_INFORMATION
+{
+    LARGE_INTEGER LastWriteTime;                    // Number of 100-nanosecond intervals since this key or any of its values changed.
+    ULONG TitleIndex;                               // Reserved // A legacy field originally intended for use with localization such as an index of a resource table.
+    ULONG NameLength;                               // The size, in bytes, of the key name string in the Name array.
+    _Field_size_bytes_(NameLength) WCHAR Name[];   // The name of the registry key. This string is not null-terminated.
+} KEY_BASIC_INFORMATION, *PKEY_BASIC_INFORMATION;
+
+typedef struct _KEY_FULL_INFORMATION
+{
+    LARGE_INTEGER LastWriteTime;
+    ULONG TitleIndex;
+    ULONG ClassOffset;
+    ULONG ClassLength;
+    ULONG SubKeys;
+    ULONG MaxNameLength;
+    ULONG MaxClassLength;
+    ULONG Values;
+    ULONG MaxValueNameLength;
+    ULONG MaxValueDataLength;
+    WCHAR Class[];
+} KEY_FULL_INFORMATION, *PKEY_FULL_INFORMATION;
+
+NTSYSAPI NTSTATUS NTAPI NtQueryKey(
+    _In_ HANDLE KeyHandle,
+    _In_ KEY_INFORMATION_CLASS KeyInformationClass,
+    _Out_writes_bytes_to_opt_(Length, *ResultLength) PVOID KeyInformation,
+    _In_ ULONG Length,
+    _Out_ PULONG ResultLength
+);

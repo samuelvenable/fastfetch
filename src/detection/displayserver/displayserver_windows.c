@@ -1,6 +1,7 @@
 #include "displayserver.h"
-#include "common/windows/unicode.h"
 #include "common/edidHelper.h"
+#include "common/windows/registry.h"
+#include "common/windows/unicode.h"
 
 #include <windows.h>
 #include <shellscalingapi.h>
@@ -49,8 +50,7 @@ static void detectDisplays(FFDisplayServerResult* ds)
                     .id = path->targetInfo.id,
                 },
             };
-            uint8_t edidData[1024];
-            DWORD edidLength = 0;
+            FF_LIST_AUTO_DESTROY edid = ffListCreate(sizeof(uint8_t));
 
             if(DisplayConfigGetDeviceInfo(&targetName.header) == ERROR_SUCCESS)
             {
@@ -69,16 +69,17 @@ static void detectDisplays(FFDisplayServerResult* ds)
                 }
                 wcscpy(pRegPath, L"Device Parameters");
 
-                edidLength = ARRAY_SIZE(edidData);
-                if (RegGetValueW(HKEY_LOCAL_MACHINE, regPath, L"EDID", RRF_RT_REG_BINARY, NULL, edidData, &edidLength) == ERROR_SUCCESS &&
-                    edidLength > 0 && edidLength % 128 == 0)
+                FF_AUTO_CLOSE_FD HANDLE hKey = NULL;
+                if (ffRegOpenKeyForRead(HKEY_LOCAL_MACHINE, regPath, &hKey, NULL) &&
+                    ffRegReadData(hKey, L"EDID", &edid, NULL) &&
+                    ffEdidIsValid(edid.data, edid.length))
                 {
-                    ffEdidGetName(edidData, &name);
-                    ffEdidGetPhysicalSize(edidData, &physicalWidth, &physicalHeight);
+                    ffEdidGetName(edid.data, &name);
+                    ffEdidGetPhysicalSize(edid.data, &physicalWidth, &physicalHeight);
                 }
                 else
                 {
-                    edidLength = 0;
+                    ffListClear(&edid);
                     if (targetName.flags.friendlyNameFromEdid)
                         ffStrbufSetWS(&name, targetName.monitorFriendlyDeviceName);
                     else
@@ -92,17 +93,6 @@ static void detectDisplays(FFDisplayServerResult* ds)
 
             uint32_t width = sourceMode->width;
             uint32_t height = sourceMode->height;
-            if (path->targetInfo.rotation == DISPLAYCONFIG_ROTATION_ROTATE90 ||
-                path->targetInfo.rotation == DISPLAYCONFIG_ROTATION_ROTATE270)
-            {
-                uint32_t temp = width;
-                width = height;
-                height = temp;
-                temp = physicalWidth;
-                physicalWidth = physicalHeight;
-                physicalHeight = temp;
-            }
-
             uint32_t rotation;
             switch (path->targetInfo.rotation)
             {
@@ -143,12 +133,19 @@ static void detectDisplays(FFDisplayServerResult* ds)
                 ReleaseDC(NULL, hdc);
             }
 
+            if (path->targetInfo.rotation == DISPLAYCONFIG_ROTATION_ROTATE90 ||
+                path->targetInfo.rotation == DISPLAYCONFIG_ROTATION_ROTATE270)
+            {
+                uint32_t temp = width;
+                width = height;
+                height = temp;
+            }
+
             FFDisplayResult* display = ffdsAppendDisplay(ds,
                 width,
                 height,
                 path->targetInfo.refreshRate.Numerator / (double) path->targetInfo.refreshRate.Denominator,
-                width * 96 / systemDpi,
-                height * 96 / systemDpi,
+                systemDpi,
                 preferredMode.width,
                 preferredMode.height,
                 preferredRefreshRate,
@@ -209,8 +206,8 @@ static void detectDisplays(FFDisplayServerResult* ds)
                     else
                         display->hdrStatus = FF_DISPLAY_HDR_STATUS_UNKNOWN;
                 }
-                if (edidLength > 0)
-                    ffEdidGetSerialAndManufactureDate(edidData, &display->serial, &display->manufactureYear, &display->manufactureWeek);
+                if (edid.length > 0)
+                    ffEdidGetSerialAndManufactureDate(edid.data, &display->serial, &display->manufactureYear, &display->manufactureWeek);
                 display->drrStatus = path->flags & DISPLAYCONFIG_PATH_BOOST_REFRESH_RATE ? FF_DISPLAY_DRR_STATUS_ENABLED : FF_DISPLAY_DRR_STATUS_DISABLED;
             }
         }
