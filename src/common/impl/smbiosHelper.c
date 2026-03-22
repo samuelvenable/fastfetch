@@ -18,6 +18,7 @@ bool ffIsSmbiosValueSet(FFstrbuf* value)
         !ffStrbufIgnCaseEqualS(value, "None") &&
         !ffStrbufIgnCaseEqualS(value, "System Name") &&
         !ffStrbufIgnCaseEqualS(value, "System Version") &&
+        !ffStrbufIgnCaseEqualS(value, "System SKU#") &&
         !ffStrbufIgnCaseEqualS(value, "Default string") &&
         !ffStrbufIgnCaseEqualS(value, "Undefined") &&
         !ffStrbufIgnCaseEqualS(value, "Not Specified") &&
@@ -32,8 +33,23 @@ bool ffIsSmbiosValueSet(FFstrbuf* value)
         !ffStrbufIgnCaseEqualS(value, "All Series") &&
         !ffStrbufIgnCaseEqualS(value, "N/A") &&
         !ffStrbufIgnCaseEqualS(value, "Unknown") &&
-        !ffStrbufIgnCaseEqualS(value, "Standard") &&
-        !ffStrbufIgnCaseEqualS(value, "0x0000")
+        !ffStrbufIgnCaseEqualS(value, "Standard") && ({
+            // Some SMBIOS implementations use "0x0000" to indicate an unset value, even for strings.
+            bool zero = ffStrbufStartsWithS(value, "0x0");
+            if (zero)
+            {
+                for (size_t i = 2; i < value->length; i++)
+                {
+                    char c = value->chars[i];
+                    if (c != '0')
+                    {
+                        zero = false;
+                        break;
+                    }
+                }
+            }
+            !zero;
+        })
     ;
 }
 
@@ -516,6 +532,72 @@ const FFSmbiosHeaderTable* ffGetSmbiosHeaderTable()
             }
         }
         FF_DEBUG("Parsed %d SMBIOS structures", structureCount);
+    }
+
+    return &table;
+}
+#elif defined(__APPLE__)
+#include "common/apple/cf_helpers.h"
+
+const FFSmbiosHeaderTable* ffGetSmbiosHeaderTable()
+{
+    static CFDataRef smbiosDataBuffer;
+    static FFSmbiosHeaderTable table;
+
+    if (smbiosDataBuffer == NULL)
+    {
+        FF_DEBUG("Initializing SMBIOS buffer on Apple platform");
+
+        FF_IOOBJECT_AUTO_RELEASE io_registry_entry_t registryEntry = IOServiceGetMatchingService(MACH_PORT_NULL, IOServiceMatching("AppleSMBIOS"));
+
+        if (!registryEntry)
+        {
+            FF_DEBUG("IOServiceGetMatchingService() failed to find AppleSMBIOS");
+            smbiosDataBuffer = CFDataCreate(NULL, NULL, 0);
+            return NULL;
+        }
+
+        FF_DEBUG("AppleSMBIOS service found, retrieving SMBIOS data");
+        smbiosDataBuffer = IORegistryEntryCreateCFProperty(registryEntry, CFSTR("SMBIOS"), kCFAllocatorDefault, kNilOptions);
+        if (!smbiosDataBuffer)
+        {
+            FF_DEBUG("IORegistryEntryCreateCFProperty() failed to get SMBIOS data");
+            smbiosDataBuffer = CFDataCreate(NULL, NULL, 0);
+            return NULL;
+        }
+
+        FF_DEBUG("Successfully retrieved SMBIOS data: %lu bytes", CFDataGetLength(smbiosDataBuffer));
+
+        FF_DEBUG("Parsing SMBIOS table structures");
+        FF_MAYBE_UNUSED int structureCount = 0;
+        for (
+            const FFSmbiosHeader* header = (const FFSmbiosHeader*) CFDataGetBytePtr(smbiosDataBuffer),
+            *end = (const FFSmbiosHeader*) ((const uint8_t*) header + CFDataGetLength(smbiosDataBuffer));
+            header < end;
+            header = ffSmbiosNextEntry(header)
+        )
+        {
+            if (header->Type < FF_SMBIOS_TYPE_END_OF_TABLE)
+            {
+                if (!table[header->Type]) {
+                    table[header->Type] = header;
+                    FF_DEBUG("Found SMBIOS structure type %u, handle 0x%04X, length %u",
+                        header->Type, header->Handle, header->Length);
+                    structureCount++;
+                }
+            }
+            else if (header->Type == FF_SMBIOS_TYPE_END_OF_TABLE) {
+                FF_DEBUG("Reached end-of-table marker");
+                break;
+            }
+        }
+        FF_DEBUG("Parsed %d SMBIOS structures", structureCount);
+    }
+
+    if (CFDataGetLength(smbiosDataBuffer) == 0)
+    {
+        FF_DEBUG("No valid SMBIOS data available");
+        return NULL;
     }
 
     return &table;

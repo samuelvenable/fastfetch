@@ -414,6 +414,7 @@ set(LIBFASTFETCH_SRC
     src/detection/editor/editor.c
     src/detection/font/font.c
     src/detection/gpu/gpu.c
+    src/detection/host/host_mac.c
     src/detection/media/media.c
     src/detection/netio/netio.c
     src/detection/opencl/opencl.c
@@ -563,7 +564,6 @@ if(LINUX)
         src/detection/gpu/gpu_wsl.c
         src/detection/gtk_qt/gtk.c
         src/detection/host/host_linux.c
-        src/detection/host/host_mac.c
         src/detection/icons/icons_linux.c
         src/detection/initsystem/initsystem_linux.c
         src/detection/keyboard/keyboard_linux.c
@@ -722,7 +722,6 @@ elseif(FreeBSD)
         src/detection/gpu/gpu_pci.c
         src/detection/gtk_qt/gtk.c
         src/detection/host/host_bsd.c
-        src/detection/host/host_mac.c
         src/detection/lm/lm_linux.c
         src/detection/icons/icons_linux.c
         src/detection/initsystem/initsystem_linux.c
@@ -949,14 +948,11 @@ elseif(APPLE)
         src/common/apple/osascript.m
         src/common/apple/smc_temps.c
         src/detection/battery/battery_apple.c
-        src/detection/bios/bios_apple.c
         src/detection/bluetooth/bluetooth_apple.m
         src/detection/bluetoothradio/bluetoothradio_apple.m
-        src/detection/board/board_apple.c
         src/detection/bootmgr/bootmgr_apple.c
         src/detection/brightness/brightness_apple.c
         src/detection/btrfs/btrfs_nosupport.c
-        src/detection/chassis/chassis_apple.c
         src/detection/cpu/cpu_apple.c
         src/detection/cpucache/cpucache_apple.c
         src/detection/cpuusage/cpuusage_apple.c
@@ -964,14 +960,11 @@ elseif(APPLE)
         src/detection/disk/disk_bsd.c
         src/detection/dns/dns_apple.c
         src/detection/physicaldisk/physicaldisk_apple.c
-        src/detection/physicalmemory/physicalmemory_apple.m
         src/detection/diskio/diskio_apple.c
         src/detection/displayserver/displayserver_apple.c
         src/detection/font/font_apple.m
         src/detection/gpu/gpu_apple.c
         src/detection/gpu/gpu_apple.m
-        src/detection/host/host_apple.c
-        src/detection/host/host_mac.c
         src/detection/icons/icons_nosupport.c
         src/detection/initsystem/initsystem_linux.c
         src/detection/keyboard/keyboard_apple.c
@@ -1007,6 +1000,24 @@ elseif(APPLE)
         src/detection/wmtheme/wmtheme_apple.m
         src/detection/camera/camera_apple.m
     )
+    # CMAKE_SYSTEM_PROCESSOR has been normalized before
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64")
+        list(APPEND LIBFASTFETCH_SRC
+            src/detection/bios/bios_windows.c
+            src/detection/board/board_windows.c
+            src/detection/chassis/chassis_windows.c
+            src/detection/host/host_windows.c
+            src/detection/physicalmemory/physicalmemory_linux.c
+        )
+    else()
+        list(APPEND LIBFASTFETCH_SRC
+            src/detection/bios/bios_apple.c
+            src/detection/board/board_apple.c
+            src/detection/chassis/chassis_apple.c
+            src/detection/host/host_apple.c
+            src/detection/physicalmemory/physicalmemory_apple.m
+        )
+    endif()
 elseif(WIN32)
     list(APPEND LIBFASTFETCH_SRC
         src/common/impl/io_windows.c
@@ -1045,7 +1056,6 @@ elseif(WIN32)
         src/detection/dns/dns_windows.c
         src/detection/font/font_windows.c
         src/detection/gpu/gpu_windows.c
-        src/detection/host/host_mac.c
         src/detection/host/host_windows.c
         src/detection/icons/icons_windows.c
         src/detection/initsystem/initsystem_nosupport.c
