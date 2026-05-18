@@ -86,7 +86,7 @@ void printSwap(FFSwapOptions* options, uint8_t index, uint32_t totalCount, FFSwa
 }
 
 bool ffPrintSwap(FFSwapOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFSwapResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectSwap(&result);
 
     if (error) {
@@ -147,8 +147,8 @@ void ffGenerateSwapJsonConfig(FFSwapOptions* options, yyjson_mut_doc* doc, yyjso
     yyjson_mut_obj_add_bool(doc, module, "separate", options->separate);
 }
 
-bool ffGenerateSwapJsonResult(FF_MAYBE_UNUSED FFSwapOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFSwapResult));
+bool ffGenerateSwapJsonResult(FF_A_UNUSED FFSwapOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectSwap(&result);
 
     if (error) {
@@ -173,7 +173,7 @@ bool ffGenerateSwapJsonResult(FF_MAYBE_UNUSED FFSwapOptions* options, yyjson_mut
 
 void ffInitSwapOptions(FFSwapOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "󰓡");
-    options->percent = (FFPercentageModuleConfig) {50, 80, 0};
+    options->percent = (FFPercentageModuleConfig) { 50, 80, 0 };
     options->separate = false;
 }
 
@@ -191,9 +191,10 @@ FFModuleBaseInfo ffSwapModuleInfo = {
     .generateJsonResult = (void*) ffGenerateSwapJsonResult,
     .generateJsonConfig = (void*) ffGenerateSwapJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Used size", "used"},
-        {"Total size", "total"},
-        {"Percentage used (num)", "percentage"},
-        {"Percentage used (bar)", "percentage-bar"},
-        {"Name", "name"},
-    }))};
+        { "Used size", "used" },
+        { "Total size", "total" },
+        { "Percentage used (num)", "percentage" },
+        { "Percentage used (bar)", "percentage-bar" },
+        { "Name", "name" },
+    }))
+};

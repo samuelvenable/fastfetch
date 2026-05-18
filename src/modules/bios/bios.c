@@ -88,7 +88,7 @@ void ffGenerateBiosJsonConfig(FFBiosOptions* options, yyjson_mut_doc* doc, yyjso
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateBiosJsonResult(FF_MAYBE_UNUSED FFBiosOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateBiosJsonResult(FF_A_UNUSED FFBiosOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFBiosResult bios;
     ffStrbufInit(&bios.date);
@@ -131,7 +131,7 @@ void ffDestroyBiosOptions(FFBiosOptions* options) {
 
 FFModuleBaseInfo ffBiosModuleInfo = {
     .name = FF_BIOS_MODULE_NAME,
-    .description = "Print information of 1st-stage bootloader (name, version, release date, etc)",
+    .description = "Print first-stage bootloader information (name, version, release date, etc.)",
     .initOptions = (void*) ffInitBiosOptions,
     .destroyOptions = (void*) ffDestroyBiosOptions,
     .parseJsonObject = (void*) ffParseBiosJsonObject,
@@ -139,9 +139,10 @@ FFModuleBaseInfo ffBiosModuleInfo = {
     .generateJsonResult = (void*) ffGenerateBiosJsonResult,
     .generateJsonConfig = (void*) ffGenerateBiosJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Bios date", "date"},
-        {"Bios release", "release"},
-        {"Bios vendor", "vendor"},
-        {"Bios version", "version"},
-        {"Firmware type", "type"},
-    }))};
+        { "BIOS date", "date" },
+        { "BIOS release", "release" },
+        { "BIOS vendor", "vendor" },
+        { "BIOS version", "version" },
+        { "Firmware type", "type" },
+    }))
+};

@@ -1,22 +1,22 @@
 #include "bios.h"
-#include "common/smbiosHelper.h"
+#include "common/smbios.h"
 
 #ifdef _WIN32
-#    include "common/windows/registry.h"
+    #include "common/windows/registry.h"
 
-#    include <ntstatus.h>
-#    include "common/windows/nt.h"
+    #include <ntstatus.h>
+    #include "common/windows/nt.h"
 #elif __OpenBSD__
-#    include "common/io.h"
+    #include "common/io.h"
 
-#    include <fcntl.h>
-#    include <unistd.h>
+    #include <fcntl.h>
+    #include <unistd.h>
 #elif __sun
-#    include <libdevinfo.h>
-#    include <sys/sunddi.h>
+    #include <libdevinfo.h>
+    #include <sys/sunddi.h>
 #elif __APPLE__
-#    include "common/apple/cf_helpers.h"
-#    include <IOKit/IOKitLib.h>
+    #include "common/apple/cf_helpers.h"
+    #include <IOKit/IOKitLib.h>
 #endif
 
 typedef struct FFSmbiosBios {
@@ -38,7 +38,7 @@ typedef struct FFSmbiosBios {
 
     // 3.1+
     uint16_t ExtendedBiosRomSize; // bit field
-} __attribute__((__packed__)) FFSmbiosBios;
+} FF_A_PACKED FFSmbiosBios;
 
 static_assert(offsetof(FFSmbiosBios, ExtendedBiosRomSize) == 0x18,
     "FFSmbiosBios: Wrong struct alignment");

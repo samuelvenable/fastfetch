@@ -43,7 +43,7 @@ void ffGenerateOpenCLJsonConfig(FFOpenCLOptions* options, yyjson_mut_doc* doc, y
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateOpenCLJsonResult(FF_MAYBE_UNUSED FFOpenCLOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateOpenCLJsonResult(FF_A_UNUSED FFOpenCLOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFOpenCLResult* result = ffDetectOpenCL();
 
     if (result->error != NULL) {
@@ -121,7 +121,7 @@ void ffDestroyOpenCLOptions(FFOpenCLOptions* options) {
 
 FFModuleBaseInfo ffOpenCLModuleInfo = {
     .name = FF_OPENCL_MODULE_NAME,
-    .description = "Print highest OpenCL version supported by the GPU",
+    .description = "Print the highest OpenCL version supported by the GPU",
     .initOptions = (void*) ffInitOpenCLOptions,
     .destroyOptions = (void*) ffDestroyOpenCLOptions,
     .parseJsonObject = (void*) ffParseOpenCLJsonObject,
@@ -129,7 +129,8 @@ FFModuleBaseInfo ffOpenCLModuleInfo = {
     .generateJsonResult = (void*) ffGenerateOpenCLJsonResult,
     .generateJsonConfig = (void*) ffGenerateOpenCLJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Platform version", "version"},
-        {"Platform name", "name"},
-        {"Platform vendor", "vendor"},
-    }))};
+        { "Platform version", "version" },
+        { "Platform name", "name" },
+        { "Platform vendor", "vendor" },
+    }))
+};

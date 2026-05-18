@@ -2,20 +2,21 @@
 #include "common/mallocHelper.h"
 #include "common/stringUtils.h"
 
+#include <stdalign.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 
 #ifdef __NetBSD__
-#    include <sys/types.h>
-#    include <sys/statvfs.h>
-#    define statfs statvfs
-#    define f_flags f_flag
-#    define f_bsize f_frsize
+    #include <sys/types.h>
+    #include <sys/statvfs.h>
+    #define statfs statvfs
+    #define f_flags f_flag
+    #define f_bsize f_frsize
 #endif
 
 #ifdef __FreeBSD__
-#    if __has_include(<libgeom.h>)
-#        include <libgeom.h>
+    #if __has_include(<libgeom.h>)
+        #include <libgeom.h>
 
 static const char* detectFsLabel(struct statfs* fs, FFDisk* disk) {
     if (!ffStrStartsWith(fs->f_mntfromname, "/dev/")) {
@@ -52,11 +53,11 @@ static const char* detectFsLabel(struct statfs* fs, FFDisk* disk) {
 
     return NULL;
 }
-#    else
-static const char* detectFsLabel(FF_MAYBE_UNUSED struct statfs* fs, FF_MAYBE_UNUSED FFDisk* disk) {
+    #else
+static const char* detectFsLabel(FF_A_UNUSED struct statfs* fs, FF_A_UNUSED FFDisk* disk) {
     return "Fastfetch was compiled without libgeom support";
 }
-#    endif
+    #endif
 
 static void detectFsInfo(struct statfs* fs, FFDisk* disk) {
     if (ffStrbufEqualS(&disk->filesystem, "zfs")) {
@@ -74,20 +75,20 @@ static void detectFsInfo(struct statfs* fs, FFDisk* disk) {
     detectFsLabel(fs, disk);
 }
 #elif __APPLE__
-#    include "common/apple/cf_helpers.h"
+    #include "common/apple/cf_helpers.h"
 
-#    include <sys/attr.h>
-#    include <unistd.h>
+    #include <sys/attr.h>
+    #include <unistd.h>
 
-#    ifndef MAC_OS_X_VERSION_10_15
-#        define MNT_REMOVABLE 0x00000200
-#    endif
+    #ifndef MAC_OS_X_VERSION_10_15
+        #define MNT_REMOVABLE 0x00000200
+    #endif
 
 struct CmnAttrBuf {
     uint32_t length;
     attrreference_t nameRef;
     char nameSpace[NAME_MAX * 3 + 1];
-} __attribute__((aligned(4), packed));
+} FF_A_PACKED;
 
 void detectFsInfo(struct statfs* fs, FFDisk* disk) {
     if (fs->f_flags & MNT_DONTBROWSE) {
@@ -98,7 +99,7 @@ void detectFsInfo(struct statfs* fs, FFDisk* disk) {
         disk->type = FF_DISK_VOLUME_TYPE_REGULAR_BIT;
     }
 
-    struct CmnAttrBuf attrBuf;
+    alignas(4) struct CmnAttrBuf attrBuf;
     if (getattrlist(disk->mountpoint.chars, &(struct attrlist) {
                                                 .bitmapcount = ATTR_BIT_MAP_COUNT,
                                                 .commonattr = ATTR_CMN_NAME,
@@ -111,11 +112,11 @@ void detectFsInfo(struct statfs* fs, FFDisk* disk) {
 }
 #else
 static void detectFsInfo(struct statfs* fs, FFDisk* disk) {
-#    ifdef MNT_IGNORE
+    #ifdef MNT_IGNORE
     if (fs->f_flags & MNT_IGNORE) {
         disk->type = FF_DISK_VOLUME_TYPE_HIDDEN_BIT;
     } else
-#    endif
+    #endif
         if (!(fs->f_flags & MNT_LOCAL)) {
         disk->type = FF_DISK_VOLUME_TYPE_EXTERNAL_BIT;
     } else {
@@ -175,7 +176,7 @@ const char* ffDetectDisksImpl(FFDiskOptions* options, FFlist* disks) {
         }
 #endif
 
-        FFDisk* disk = ffListAdd(disks);
+        FFDisk* disk = FF_LIST_ADD(FFDisk, *disks);
 
         disk->bytesTotal = (uint64_t) fs->f_blocks * (uint64_t) fs->f_bsize;
         disk->bytesFree = (uint64_t) fs->f_bfree * (uint64_t) fs->f_bsize;
@@ -199,7 +200,7 @@ const char* ffDetectDisksImpl(FFDiskOptions* options, FFlist* disks) {
         }
 
 #ifdef __OpenBSD__
-#    define st_birthtimespec __st_birthtim
+    #define st_birthtimespec __st_birthtim
 #endif
 #ifndef __DragonFly__
         struct stat st;

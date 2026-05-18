@@ -29,7 +29,7 @@ static void formatKey(const FFNetIOOptions* options, FFNetIOResult* inf, uint32_
 }
 
 bool ffPrintNetIO(FFNetIOOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFNetIOResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectNetIO(&result, options);
 
     if (error) {
@@ -37,7 +37,7 @@ bool ffPrintNetIO(FFNetIOOptions* options) {
         return false;
     }
 
-    ffListSort(&result, (const void*) sortInfs);
+    ffListSort(&result, sizeof(FFNetIOResult), (const void*) sortInfs);
 
     uint32_t index = 0;
     FF_STRBUF_AUTO_DESTROY key = ffStrbufCreate();
@@ -148,7 +148,7 @@ void ffGenerateNetIOJsonConfig(FFNetIOOptions* options, yyjson_mut_doc* doc, yyj
 }
 
 bool ffGenerateNetIOJsonResult(FFNetIOOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFNetIOResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectNetIO(&result, options);
 
     if (error) {
@@ -208,16 +208,17 @@ FFModuleBaseInfo ffNetIOModuleInfo = {
     .generateJsonResult = (void*) ffGenerateNetIOJsonResult,
     .generateJsonConfig = (void*) ffGenerateNetIOJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Size of data received [per second] (formatted)", "rx-size"},
-        {"Size of data sent [per second] (formatted)", "tx-size"},
-        {"Interface name", "ifname"},
-        {"Is default route", "is-default-route"},
-        {"Size of data received [per second] (in bytes)", "rx-bytes"},
-        {"Size of data sent [per second] (in bytes)", "tx-bytes"},
-        {"Number of packets received [per second]", "rx-packets"},
-        {"Number of packets sent [per second]", "tx-packets"},
-        {"Number of errors received [per second]", "rx-errors"},
-        {"Number of errors sent [per second]", "tx-errors"},
-        {"Number of packets dropped when receiving [per second]", "rx-drops"},
-        {"Number of packets dropped when sending [per second]", "tx-drops"},
-    }))};
+        { "Size of data received [per second] (formatted)", "rx-size" },
+        { "Size of data sent [per second] (formatted)", "tx-size" },
+        { "Interface name", "ifname" },
+        { "Is default route", "is-default-route" },
+        { "Size of data received [per second] (in bytes)", "rx-bytes" },
+        { "Size of data sent [per second] (in bytes)", "tx-bytes" },
+        { "Number of packets received [per second]", "rx-packets" },
+        { "Number of packets sent [per second]", "tx-packets" },
+        { "Number of errors received [per second]", "rx-errors" },
+        { "Number of errors sent [per second]", "tx-errors" },
+        { "Number of packets dropped when receiving [per second]", "rx-drops" },
+        { "Number of packets dropped when sending [per second]", "tx-drops" },
+    }))
+};

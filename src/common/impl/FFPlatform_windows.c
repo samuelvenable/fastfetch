@@ -77,8 +77,8 @@ static void platformPathAddKnownFolder(FFlist* dirs, REFKNOWNFOLDERID folderId) 
         CoTaskMemFree(pPath);
         ffStrbufReplaceAllC(&buffer, '\\', '/');
         ffStrbufEnsureEndsWithC(&buffer, '/');
-        if (!ffListContains(dirs, &buffer, (void*) ffStrbufEqual)) {
-            ffStrbufInitMove((FFstrbuf*) ffListAdd(dirs), &buffer);
+        if (!FF_LIST_CONTAINS(*dirs, &buffer, ffStrbufEqual)) {
+            ffStrbufInitMove(FF_LIST_ADD(FFstrbuf, *dirs), &buffer);
         }
     }
 }
@@ -98,8 +98,8 @@ static void platformPathAddEnvSuffix(FFlist* dirs, const char* env, const char* 
         ffStrbufEnsureEndsWithC(&buffer, '/');
     }
 
-    if (ffPathExists(buffer.chars, FF_PATHTYPE_DIRECTORY) && !ffListContains(dirs, &buffer, (void*) ffStrbufEqual)) {
-        ffStrbufInitMove((FFstrbuf*) ffListAdd(dirs), &buffer);
+    if (ffPathExists(buffer.chars, FF_PATHTYPE_DIRECTORY) && !FF_LIST_CONTAINS(*dirs, &buffer, ffStrbufEqual)) {
+        ffStrbufInitMove(FF_LIST_ADD(FFstrbuf, *dirs), &buffer);
     }
 }
 
@@ -139,9 +139,14 @@ static void getUserName(FFPlatform* platform) {
         ffStrbufSetWS(&platform->fullUserName, buffer);
     }
 
-    size = ARRAY_SIZE(buffer);
-    if (GetUserNameW(buffer, &size)) { // GetUserNameExW(10002)?
-        ffStrbufSetWS(&platform->userName, buffer);
+    NTSYSAPI NTSTATUS NTAPI LsaGetUserName(
+        _Outptr_ PLSA_UNICODE_STRING * UserName,
+        _Outptr_opt_ PLSA_UNICODE_STRING * DomainName);
+    PLSA_UNICODE_STRING userName = NULL;
+    if (NT_SUCCESS(LsaGetUserName(&userName, NULL))) {
+        ffStrbufSetNWS(&platform->userName, userName->Length / sizeof(wchar_t), userName->Buffer);
+        RtlFreeUnicodeString(userName); // Required. userName.Buffer is allocated separately
+        LsaFreeMemory(userName);
     } else {
         ffStrbufSetS(&platform->userName, getenv("USERNAME"));
     }
@@ -149,7 +154,7 @@ static void getUserName(FFPlatform* platform) {
     alignas(TOKEN_USER) char buf[SECURITY_MAX_SID_SIZE + sizeof(TOKEN_USER)];
     if (NT_SUCCESS(NtQueryInformationToken(NtCurrentProcessToken(), TokenUser, buf, sizeof(buf), &size))) {
         TOKEN_USER* tokenUser = (TOKEN_USER*) buf;
-        UNICODE_STRING sidString = {.Buffer = buffer, .Length = 0, .MaximumLength = sizeof(buffer)};
+        UNICODE_STRING sidString = { .Buffer = buffer, .Length = 0, .MaximumLength = sizeof(buffer) };
         if (NT_SUCCESS(RtlConvertSidToUnicodeString(&sidString, tokenUser->User.Sid, FALSE))) {
             ffStrbufSetNWS(&platform->sid, sidString.Length / sizeof(wchar_t), sidString.Buffer);
         }

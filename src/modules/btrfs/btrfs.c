@@ -95,7 +95,7 @@ static void printBtrfs(FFBtrfsOptions* options, FFBtrfsResult* result, uint8_t i
 }
 
 bool ffPrintBtrfs(FFBtrfsOptions* options) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFBtrfsResult));
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectBtrfs(&results);
 
@@ -146,8 +146,8 @@ void ffGenerateBtrfsJsonConfig(FFBtrfsOptions* options, yyjson_mut_doc* doc, yyj
     ffPercentGenerateJsonConfig(doc, module, options->percent);
 }
 
-bool ffGenerateBtrfsJsonResult(FF_MAYBE_UNUSED FFBtrfsOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFBtrfsResult));
+bool ffGenerateBtrfsJsonResult(FF_A_UNUSED FFBtrfsOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectBtrfs(&results);
     if (error) {
@@ -190,7 +190,7 @@ bool ffGenerateBtrfsJsonResult(FF_MAYBE_UNUSED FFBtrfsOptions* options, yyjson_m
 
 void ffInitBtrfsOptions(FFBtrfsOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "󱑛");
-    options->percent = (FFPercentageModuleConfig) {50, 80, 0};
+    options->percent = (FFPercentageModuleConfig) { 50, 80, 0 };
 }
 
 void ffDestroyBtrfsOptions(FFBtrfsOptions* options) {
@@ -207,17 +207,18 @@ FFModuleBaseInfo ffBtrfsModuleInfo = {
     .generateJsonResult = (void*) ffGenerateBtrfsJsonResult,
     .generateJsonConfig = (void*) ffGenerateBtrfsJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Name / Label", "name"},
-        {"UUID", "uuid"},
-        {"Associated devices", "devices"},
-        {"Enabled features", "features"},
-        {"Size used", "used"},
-        {"Size allocated", "allocated"},
-        {"Size total", "total"},
-        {"Used percentage num", "used-percentage"},
-        {"Allocated percentage num", "allocated-percentage"},
-        {"Used percentage bar", "used-percentage-bar"},
-        {"Allocated percentage bar", "allocated-percentage-bar"},
-        {"Node size", "node-size"},
-        {"Sector size", "sector-size"},
-    }))};
+        { "Name / Label", "name" },
+        { "UUID", "uuid" },
+        { "Associated devices", "devices" },
+        { "Enabled features", "features" },
+        { "Size used", "used" },
+        { "Size allocated", "allocated" },
+        { "Size total", "total" },
+        { "Used percentage num", "used-percentage" },
+        { "Allocated percentage num", "allocated-percentage" },
+        { "Used percentage bar", "used-percentage-bar" },
+        { "Allocated percentage bar", "allocated-percentage-bar" },
+        { "Node size", "node-size" },
+        { "Sector size", "sector-size" },
+    }))
+};

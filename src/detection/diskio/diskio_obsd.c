@@ -6,7 +6,7 @@
 #include <sys/sysctl.h>
 
 const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
-    int mib[] = {CTL_HW, HW_DISKSTATS};
+    int mib[] = { CTL_HW, HW_DISKSTATS };
     size_t len;
     if (sysctl(mib, ARRAY_SIZE(mib), NULL, &len, NULL, 0) < 0) {
         return "sysctl({HW_DISKSTATS}, NULL) failed";
@@ -26,7 +26,7 @@ const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
             continue;
         }
 
-        FFDiskIOResult* device = (FFDiskIOResult*) ffListAdd(result);
+        FFDiskIOResult* device = FF_LIST_ADD(FFDiskIOResult, *result);
         ffStrbufInitF(&device->devPath, "/dev/%s", st->ds_name);
         ffStrbufInitS(&device->name, st->ds_name);
         device->bytesRead = st->ds_rbytes;

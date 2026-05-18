@@ -95,7 +95,7 @@ static void printIp(FFLocalIpResult* ip, bool markDefaultRoute, FFstrbuf* buffer
 }
 
 bool ffPrintLocalIp(FFLocalIpOptions* options) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFLocalIpResult));
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectLocalIps(options, &results);
 
@@ -109,7 +109,7 @@ bool ffPrintLocalIp(FFLocalIpOptions* options) {
         return false;
     }
 
-    ffListSort(&results, (const void*) sortIps);
+    ffListSort(&results, sizeof(FFLocalIpResult), (const void*) sortIps);
 
     FF_STRBUF_AUTO_DESTROY buffer = ffStrbufCreate();
 
@@ -193,11 +193,11 @@ void ffParseLocalIpJsonObject(FFLocalIpOptions* options, yyjson_val* module) {
             } else if (yyjson_is_str(val)) {
                 int value;
                 const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                           {"auto", FF_LOCALIP_IPV6_TYPE_AUTO},
-                                                                           {"gua", FF_LOCALIP_IPV6_TYPE_GUA_BIT},
-                                                                           {"ula", FF_LOCALIP_IPV6_TYPE_ULA_BIT},
-                                                                           {"lla", FF_LOCALIP_IPV6_TYPE_LLA_BIT},
-                                                                           {"unknown", FF_LOCALIP_IPV6_TYPE_UNKNOWN_BIT},
+                                                                           { "auto", FF_LOCALIP_IPV6_TYPE_AUTO },
+                                                                           { "gua", FF_LOCALIP_IPV6_TYPE_GUA_BIT },
+                                                                           { "ula", FF_LOCALIP_IPV6_TYPE_ULA_BIT },
+                                                                           { "lla", FF_LOCALIP_IPV6_TYPE_LLA_BIT },
+                                                                           { "unknown", FF_LOCALIP_IPV6_TYPE_UNKNOWN_BIT },
                                                                            {},
                                                                        });
                 if (error) {
@@ -350,8 +350,8 @@ void ffGenerateLocalIpJsonConfig(FFLocalIpOptions* options, yyjson_mut_doc* doc,
     yyjson_mut_obj_add_strbuf(doc, module, "namePrefix", &options->namePrefix);
 }
 
-bool ffGenerateLocalIpJsonResult(FF_MAYBE_UNUSED FFLocalIpOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFLocalIpResult));
+bool ffGenerateLocalIpJsonResult(FF_A_UNUSED FFLocalIpOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectLocalIps(options, &results);
 
@@ -423,7 +423,7 @@ void ffDestroyLocalIpOptions(FFLocalIpOptions* options) {
 
 FFModuleBaseInfo ffLocalIPModuleInfo = {
     .name = FF_LOCALIP_MODULE_NAME,
-    .description = "List local IP addresses (v4 or v6), MAC addresses, etc",
+    .description = "List local IP addresses (IPv4 or IPv6), MAC addresses, etc",
     .initOptions = (void*) ffInitLocalIpOptions,
     .destroyOptions = (void*) ffDestroyLocalIpOptions,
     .parseJsonObject = (void*) ffParseLocalIpJsonObject,
@@ -431,12 +431,13 @@ FFModuleBaseInfo ffLocalIPModuleInfo = {
     .generateJsonResult = (void*) ffGenerateLocalIpJsonResult,
     .generateJsonConfig = (void*) ffGenerateLocalIpJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"IPv4 address", "ipv4"},
-        {"IPv6 address", "ipv6"},
-        {"MAC address", "mac"},
-        {"Interface name", "ifname"},
-        {"Is default route", "is-default-route"},
-        {"MTU size in bytes", "mtu"},
-        {"Link speed (formatted)", "speed"},
-        {"Interface flags", "flags"},
-    }))};
+        { "IPv4 address", "ipv4" },
+        { "IPv6 address", "ipv6" },
+        { "MAC address", "mac" },
+        { "Interface name", "ifname" },
+        { "Is default route", "is-default-route" },
+        { "MTU size in bytes", "mtu" },
+        { "Link speed (formatted)", "speed" },
+        { "Interface flags", "flags" },
+    }))
+};

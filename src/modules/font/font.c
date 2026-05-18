@@ -57,7 +57,7 @@ void ffGenerateFontJsonConfig(FFFontOptions* options, yyjson_mut_doc* doc, yyjso
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateFontJsonResult(FF_MAYBE_UNUSED FFFontOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateFontJsonResult(FF_A_UNUSED FFFontOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFFontResult font;
     for (uint32_t i = 0; i < FF_DETECT_FONT_NUM_FONTS; ++i) {
@@ -104,9 +104,10 @@ FFModuleBaseInfo ffFontModuleInfo = {
     .generateJsonResult = (void*) ffGenerateFontJsonResult,
     .generateJsonConfig = (void*) ffGenerateFontJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Font 1", "font1"},
-        {"Font 2", "font2"},
-        {"Font 3", "font3"},
-        {"Font 4", "font4"},
-        {"Combined fonts for display", "combined"},
-    }))};
+        { "Font 1", "font1" },
+        { "Font 2", "font2" },
+        { "Font 3", "font3" },
+        { "Font 4", "font4" },
+        { "Combined fonts for display", "combined" },
+    }))
+};

@@ -4,13 +4,13 @@
 #include "detection/vulkan/vulkan.h"
 
 #ifdef FF_HAVE_VULKAN
-#    include "common/library.h"
-#    include "common/io.h"
-#    include "common/parsing.h"
-#    include "common/stringUtils.h"
+    #include "common/library.h"
+    #include "common/io.h"
+    #include "common/parsing.h"
+    #include "common/stringUtils.h"
 
-#    include <stdlib.h>
-#    include <vulkan/vulkan.h>
+    #include <stdlib.h>
+    #include <vulkan/vulkan.h>
 
 static inline void applyVulkanVersion(uint32_t vulkanVersion, FFVersion* ffVersion) {
     ffVersion->major = VK_VERSION_MAJOR(vulkanVersion);
@@ -42,16 +42,16 @@ static const char* detectVulkan(FFVulkanResult* result) {
     FF_DEBUG("Starting Vulkan detection");
 
     FF_LIBRARY_LOAD_MESSAGE(vulkan,
-#    if __APPLE__
+    #if __APPLE__
         "libMoltenVK" FF_LIBRARY_EXTENSION,
         -1
-#    elif _WIN32
+    #elif _WIN32
         "vulkan-1" FF_LIBRARY_EXTENSION,
         -1
-#    else
+    #else
         "libvulkan" FF_LIBRARY_EXTENSION,
         2
-#    endif
+    #endif
     )
     FF_LIBRARY_LOAD_SYMBOL_MESSAGE(vulkan, vkGetInstanceProcAddr)
     FF_LIBRARY_LOAD_SYMBOL_MESSAGE(vulkan, vkCreateInstance)
@@ -99,12 +99,12 @@ static const char* detectVulkan(FFVulkanResult* result) {
                                               .engineVersion = projectVersion,
 
                                               // We need to request 1.1 to get physicalDeviceDriverProperties
-                                              .apiVersion = instanceVersion.minor >= 1 ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0},
+                                              .apiVersion = instanceVersion.minor >= 1 ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0 },
                                           .enabledLayerCount = 0,
                                           .ppEnabledLayerNames = NULL,
                                           .enabledExtensionCount = 0,
                                           .ppEnabledExtensionNames = NULL,
-                                          .flags = 0},
+                                          .flags = 0 },
         NULL,
         &vkInstance);
     if (res != VK_SUCCESS) {
@@ -243,7 +243,7 @@ static const char* detectVulkan(FFVulkanResult* result) {
             }
         }
 
-        FFGPUResult* gpu = ffListAdd(&result->gpus);
+        FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, result->gpus);
 
         ffStrbufInitF(&gpu->platformApi, "Vulkan %u.%u.%u", deviceAPIVersion.major, deviceAPIVersion.minor, deviceAPIVersion.patch);
         gpu->deviceId = physicalDeviceProperties.properties.deviceID;
@@ -304,14 +304,16 @@ static const char* detectVulkan(FFVulkanResult* result) {
 
 FFVulkanResult* ffDetectVulkan(void) {
     static FFVulkanResult result;
+    static bool initialized;
 
-    if (result.gpus.elementSize == 0) {
+    if (!initialized) {
         FF_DEBUG("Initializing Vulkan detection cache");
+        initialized = true;
         ffStrbufInit(&result.driver);
         ffStrbufInit(&result.apiVersion);
         ffStrbufInit(&result.conformanceVersion);
         ffStrbufInit(&result.instanceVersion);
-        ffListInit(&result.gpus, sizeof(FFGPUResult));
+        ffListInit(&result.gpus);
 
 #ifdef FF_HAVE_VULKAN
         result.error = detectVulkan(&result);

@@ -50,7 +50,7 @@ void ffGenerateTerminalSizeJsonConfig(FFTerminalSizeOptions* options, yyjson_mut
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateTerminalSizeJsonResult(FF_MAYBE_UNUSED FFTerminalSizeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateTerminalSizeJsonResult(FF_A_UNUSED FFTerminalSizeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFTerminalSizeResult result;
 
     if (!ffDetectTerminalSize(&result)) {
@@ -77,7 +77,7 @@ void ffDestroyTerminalSizeOptions(FFTerminalSizeOptions* options) {
 
 FFModuleBaseInfo ffTerminalSizeModuleInfo = {
     .name = FF_TERMINALSIZE_MODULE_NAME,
-    .description = "Print current terminal size",
+    .description = "Print the current terminal size",
     .initOptions = (void*) ffInitTerminalSizeOptions,
     .destroyOptions = (void*) ffDestroyTerminalSizeOptions,
     .parseJsonObject = (void*) ffParseTerminalSizeJsonObject,
@@ -85,9 +85,9 @@ FFModuleBaseInfo ffTerminalSizeModuleInfo = {
     .generateJsonResult = (void*) ffGenerateTerminalSizeJsonResult,
     .generateJsonConfig = (void*) ffGenerateTerminalSizeJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Terminal rows", "rows"},
-        {"Terminal columns", "columns"},
-        {"Terminal width (in pixels)", "width"},
-        {"Terminal height (in pixels)", "height"},
+        { "Terminal rows", "rows" },
+        { "Terminal columns", "columns" },
+        { "Terminal width (in pixels)", "width" },
+        { "Terminal height (in pixels)", "height" },
     })),
 };

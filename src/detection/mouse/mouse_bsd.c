@@ -6,9 +6,9 @@
 #include <usbhid.h>
 
 #if __has_include(<dev/usb/usb_ioctl.h>)
-#    include <dev/usb/usb_ioctl.h> // FreeBSD
+    #include <dev/usb/usb_ioctl.h> // FreeBSD
 #else
-#    include <bus/u4b/usb_ioctl.h> // DragonFly
+    #include <bus/u4b/usb_ioctl.h> // DragonFly
 #endif
 
 #define MAX_UHID_MICE 64
@@ -41,7 +41,7 @@ const char* ffDetectMouse(FFlist* devices /* List of FFMouseDevice */) {
 
                 struct usb_device_info di;
                 if (ioctl(fd, USB_GET_DEVICEINFO, &di) != -1) {
-                    FFMouseDevice* device = (FFMouseDevice*) ffListAdd(devices);
+                    FFMouseDevice* device = FF_LIST_ADD(FFMouseDevice, *devices);
                     ffStrbufInitS(&device->serial, di.udi_serial);
                     ffStrbufInitS(&device->name, di.udi_product);
                 }

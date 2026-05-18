@@ -11,10 +11,10 @@
 #include <unistd.h>
 #include <locale.h>
 #ifdef _WIN32
-#    include <windows.h>
-#    include "common/windows/unicode.h"
+    #include <windows.h>
+    #include "common/windows/unicode.h"
 #else
-#    include <signal.h>
+    #include <signal.h>
 #endif
 
 FFinstance instance; // Global singleton
@@ -57,9 +57,9 @@ void ffInitInstance(void) {
     initState(&instance.state);
 }
 
-static volatile bool ffDisableLinewrap = true;
-static volatile bool ffHideCursor = true;
-#if _WIN32
+static volatile bool ffDisableLinewrap = false;
+static volatile bool ffHideCursor = false;
+#ifdef _WIN32
 static volatile UINT oldCp = CP_UTF8;
 #endif
 
@@ -86,12 +86,12 @@ static void resetConsole(void) {
 }
 
 #ifdef _WIN32
-BOOL WINAPI consoleHandler(FF_MAYBE_UNUSED DWORD signal) {
+BOOL WINAPI consoleHandler(FF_A_UNUSED DWORD signal) {
     resetConsole();
     exit(0);
 }
 #else
-static void exitSignalHandler(FF_MAYBE_UNUSED int signal) {
+static void exitSignalHandler(FF_A_UNUSED int signal) {
     resetConsole();
     exit(0);
 }
@@ -122,7 +122,10 @@ void ffStart(void) {
     if (instance.config.display.noBuffer) {
         setvbuf(stdout, NULL, _IONBF, 0);
     }
-    struct sigaction action = {.sa_handler = exitSignalHandler};
+    struct sigaction action;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    action.sa_handler = exitSignalHandler;
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGQUIT, &action, NULL);
@@ -170,6 +173,15 @@ void ffDestroyInstance(void) {
     destroyState();
 }
 
+#if FF_HAVE_LUA
+    #include <lua.h>
+#endif
+#if FF_HAVE_QUICKJS
+    #include <quickjs.h>
+    #define FF_STR_INDIR(x) #x
+    #define FF_STR(x) FF_STR_INDIR(x)
+#endif
+
 // Must be in a file compiled with the libfastfetch target, because the FF_HAVE* macros are not defined for the executable targets
 void ffListFeatures(void) {
     fputs(
@@ -199,6 +211,9 @@ void ffListFeatures(void) {
 #endif
 #if FF_HAVE_DCONF
         "dconf\n"
+#endif
+#if FF_HAVE_EET
+        "eet\n"
 #endif
 #if FF_HAVE_DBUS
         "dbus\n"
@@ -251,17 +266,23 @@ void ffListFeatures(void) {
 #if FF_HAVE_LINUX_VIDEODEV2
         "linux/videodev2\n"
 #endif
-#if FF_HAVE_LINUX_WIRELESS
-        "linux/wireless\n"
-#endif
 #if FF_HAVE_EMBEDDED_PCIIDS
         "Embedded pciids\n"
+#endif
+#if FF_HAVE_WINRT
+        "WinRT headers\n"
 #endif
 #if FF_WIN81_COMPAT
         "Windows 8.1 Compatibility\n"
 #endif
 #if FF_APPLE_MEMSIZE_USABLE
         "Apple memsize_usable\n"
+#endif
+#if FF_HAVE_LUA
+        LUA_VERSION "\n"
+#endif
+#if FF_HAVE_QUICKJS
+        "QuickJS " FF_STR(QJS_VERSION_MAJOR) "." FF_STR(QJS_VERSION_MINOR) "." FF_STR(QJS_VERSION_PATCH) QJS_VERSION_SUFFIX "\n"
 #endif
         "",
         stdout);

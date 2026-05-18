@@ -26,7 +26,7 @@ static const char* detectByProcMeminfo(FFlist* result) {
         swapFree = strtoul(token + strlen("SwapFree:"), NULL, 10);
     }
 
-    FFSwapResult* swap = ffListAdd(result);
+    FFSwapResult* swap = FF_LIST_ADD(FFSwapResult, *result);
     ffStrbufInitStatic(&swap->name, "Total");
     swap->bytesTotal = swapTotal * 1024lu;
     swap->bytesUsed = (swapTotal - swapFree) * 1024lu;
@@ -54,11 +54,11 @@ static const char* detectByProcSwaps(FFlist* result) {
         }
 
         uint32_t nameLen = (uint32_t) strnlen(name, sizeof(name));
-        FFSwapResult* swap = ffListAdd(result);
+        FFSwapResult* swap = FF_LIST_ADD(FFSwapResult, *result);
         ffStrbufInitA(&swap->name, nameLen);
         for (size_t i = 0; i < nameLen; ++i) {
             if (name[i] == '\\') {
-                char octal[4] = {name[i + 1], name[i + 2], name[i + 3], '\0'};
+                char octal[4] = { name[i + 1], name[i + 2], name[i + 3], '\0' };
                 ffStrbufAppendC(&swap->name, (char) strtol(octal, NULL, 8));
                 i += 3;
             } else {

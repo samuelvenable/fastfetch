@@ -28,7 +28,7 @@ bool ffPrintDE(FFDEOptions* options) {
 
         putchar('\n');
     } else {
-        FF_PRINT_FORMAT_CHECKED(FF_DE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) {FF_ARG(result->deProcessName, "process-name"), FF_ARG(result->dePrettyName, "pretty-name"), FF_ARG(version, "version")}));
+        FF_PRINT_FORMAT_CHECKED(FF_DE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) { FF_ARG(result->deProcessName, "process-name"), FF_ARG(result->dePrettyName, "pretty-name"), FF_ARG(version, "version") }));
     }
 
     return true;
@@ -55,7 +55,7 @@ void ffGenerateDEJsonConfig(FFDEOptions* options, yyjson_mut_doc* doc, yyjson_mu
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateDEJsonResult(FF_MAYBE_UNUSED FFDEOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateDEJsonResult(FF_A_UNUSED FFDEOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     const FFDisplayServerResult* result = ffConnectDisplayServer();
 
     if (result->dePrettyName.length == 0) {
@@ -91,7 +91,8 @@ FFModuleBaseInfo ffDEModuleInfo = {
     .generateJsonResult = (void*) ffGenerateDEJsonResult,
     .generateJsonConfig = (void*) ffGenerateDEJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"DE process name", "process-name"},
-        {"DE pretty name", "pretty-name"},
-        {"DE version", "version"},
-    }))};
+        { "DE process name", "process-name" },
+        { "DE pretty name", "pretty-name" },
+        { "DE version", "version" },
+    }))
+};

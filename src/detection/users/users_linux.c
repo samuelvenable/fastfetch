@@ -6,17 +6,17 @@
 #include <unistd.h>
 
 #if FF_HAVE_UTMPX
-#    include <utmpx.h>
+    #include <utmpx.h>
 #else
-// for Android compatibility
-#    include <utmp.h>
-#    define utmpx utmp
-#    define setutxent setutent
-#    define getutxent getutent
+    // for Android compatibility
+    #include <utmp.h>
+    #define utmpx utmp
+    #define setutxent setutent
+    #define getutxent getutent
 #endif
 #if __linux__ || __GNU__
-#    include <netinet/in.h>
-#    include <arpa/inet.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
 #endif
 
 #if __linux__
@@ -28,10 +28,10 @@ bool detectUserBySystemd(const FFstrbuf* pathUsers, FFlist* users) {
 
     // WARNING: This is private data. Do not parse
     if (!ffParsePropFileValues(pathUsers->chars, 4, (FFpropquery[]) {
-                                                        {"NAME=", &userName},
-                                                        {"STATE=", &state},
-                                                        {"REALTIME=", &loginTime},
-                                                        {"ONLINE_SESSIONS=", &sessions},
+                                                        { "NAME=", &userName },
+                                                        { "STATE=", &state },
+                                                        { "REALTIME=", &loginTime },
+                                                        { "ONLINE_SESSIONS=", &sessions },
                                                     }) ||
         !ffStrbufEqualS(&state, "active")) {
         return false;
@@ -65,10 +65,10 @@ bool detectUserBySystemd(const FFstrbuf* pathUsers, FFlist* users) {
 
         // WARNING: This is private data. Do not parse
         if (ffParsePropFileValues(pathSessions.chars, 4, (FFpropquery[]) {
-                                                             {"REMOTE_HOST=", &remoteHost},
-                                                             {"TTY=", &tty},
-                                                             {"SERVICE=", &service},
-                                                             {"REALTIME=", &loginTime},
+                                                             { "REMOTE_HOST=", &remoteHost },
+                                                             { "TTY=", &tty },
+                                                             { "SERVICE=", &service },
+                                                             { "REALTIME=", &loginTime },
                                                          }) &&
             !ffStrbufEqualS(&service, "systemd-user")) {
             if (remoteHost.length) {
@@ -143,7 +143,7 @@ static void fillUtmpIpAddr(FFUserResult* user, struct utmpx* n) {
     }
 }
 #else
-static void fillUtmpIpAddr(FF_MAYBE_UNUSED FFUserResult* user, FF_MAYBE_UNUSED struct utmpx* n) {
+static void fillUtmpIpAddr(FF_A_UNUSED FFUserResult* user, FF_A_UNUSED struct utmpx* n) {
 }
 #endif
 

@@ -6,13 +6,12 @@
 #include "common/path.h"
 #include "common/stringUtils.h"
 #include "common/debug.h"
-#include "detection/displayserver/displayserver.h"
 
-const char* ffDetectWMPlugin(FF_MAYBE_UNUSED FFstrbuf* pluginName) {
+const char* ffDetectWMPlugin(FF_A_UNUSED FFstrbuf* pluginName) {
     return "Not supported on this platform";
 }
 
-static bool extractCommonWmVersion(const char* line, FF_MAYBE_UNUSED uint32_t len, void* userdata) {
+static bool extractCommonWmVersion(const char* line, FF_A_UNUSED uint32_t len, void* userdata) {
     int count = 0;
     sscanf(line, "%*d.%*d.%*d%n", &count);
     if (count == 0) {
@@ -75,7 +74,7 @@ static const char* getHyprland(FFstrbuf* result) {
     }
     FF_DEBUG("Failed to extract version from binary strings, trying --version option");
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {buffer.chars, "--version", NULL}) == NULL) {
+    if (ffProcessAppendStdOut(result, (char* const[]) { buffer.chars, "--version", NULL }) == NULL) {
         // Hyprland 0.48.1 built from branch  at commit 29e2e59...
         // Date: ...
         // Tag: v0.48.1, commits: 5937
@@ -98,15 +97,24 @@ static const char* getHyprland(FFstrbuf* result) {
     return "Failed to run command `Hyprland --version`";
 }
 
-static bool extractSwayVersion(const char* line, FF_MAYBE_UNUSED uint32_t len, void* userdata) {
-    if (!ffStrStartsWith(line, "sway version ")) {
+static bool extractSwayVersion(const char* line, FF_A_UNUSED uint32_t len, void* userdata) {
+    FFstrbuf* result = (FFstrbuf*) userdata;
+    if (!ffStrStartsWith(line, "sway")) {
         return true;
     }
+    if (ffStrStartsWith(line + 4, " version ")) {
+        ffStrbufSetNS(result, len - (uint32_t) strlen("sway version "), line + strlen("sway version "));
+        ffStrbufTrimRightSpace(result);
+        return false;
+    } else {
+        char swayfxVer[32], swayVer[32];
+        if (sscanf(line + 4, "fx version %31[^ ] (based on sway %31[^)])", swayfxVer, swayVer) == 2) {
+            ffStrbufSetF(result, "%s [swayfx %s]", swayVer, swayfxVer);
+            return false;
+        }
+    }
 
-    FFstrbuf* result = (FFstrbuf*) userdata;
-    ffStrbufSetNS(result, len - (uint32_t) strlen("sway version "), line + strlen("sway version "));
-    ffStrbufTrimRightSpace(result);
-    return false;
+    return true;
 }
 
 static const char* getSway(FFstrbuf* result) {
@@ -116,13 +124,14 @@ static const char* getSway(FFstrbuf* result) {
         return "Failed to find sway executable path";
     }
 
-    ffBinaryExtractStrings(path.chars, extractSwayVersion, result, (uint32_t) strlen("v0.0.0"));
+    ffBinaryExtractStrings(path.chars, extractSwayVersion, result, (uint32_t) strlen("sway version 0.0.0"));
     if (result->length > 0) {
         return NULL;
     }
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {path.chars, "--version", NULL}) == NULL) { // sway version 1.10
+    if (ffProcessAppendStdOut(result, (char* const[]) { path.chars, "--version", NULL }) == NULL) { // sway version 1.10
         ffStrbufSubstrAfterLastC(result, ' ');
+        ffStrbufTrimRight(result, ')'); // swayfx
         ffStrbufTrimRightSpace(result);
         return NULL;
     }
@@ -142,7 +151,7 @@ static const char* getLabwc(FFstrbuf* result) {
         return NULL;
     }
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {path.chars, "--version", NULL}) == NULL) { // labwc 0.9.0 (+xwayland +nls +rsvg +libsfdo)
+    if (ffProcessAppendStdOut(result, (char* const[]) { path.chars, "--version", NULL }) == NULL) { // labwc 0.9.0 (+xwayland +nls +rsvg +libsfdo)
         ffStrbufSubstrAfterFirstC(result, ' ');
         ffStrbufSubstrBeforeFirstC(result, ' ');
         return NULL;
@@ -152,7 +161,7 @@ static const char* getLabwc(FFstrbuf* result) {
 }
 
 static const char* getNiri(FFstrbuf* result) {
-    if (ffProcessAppendStdOut(result, (char* const[]) {"niri", "--version", NULL}) == NULL) { // niri 25.11 (commit b35bcae)
+    if (ffProcessAppendStdOut(result, (char* const[]) { "niri", "--version", NULL }) == NULL) { // niri 25.11 (commit b35bcae)
         ffStrbufSubstrAfterFirstC(result, ' ');
         ffStrbufSubstrBeforeLastC(result, '(');
         ffStrbufTrimRightSpace(result);
@@ -162,7 +171,7 @@ static const char* getNiri(FFstrbuf* result) {
     return "Failed to run command `niri --version`";
 }
 
-#    ifdef __linux__
+    #ifdef __linux__
 static const char* getWslg(FFstrbuf* result) {
     if (!ffAppendFileBuffer("/mnt/wslg/versions.txt", result)) {
         return "Failed to read /mnt/wslg/versions.txt";
@@ -178,11 +187,11 @@ static const char* getWslg(FFstrbuf* result) {
     ffStrbufTrimLeft(result, ' ');
     return NULL;
 }
-#    endif
+    #endif
 
 #endif // !__ANDROID__
 
-static bool extractI3Version(const char* line, FF_MAYBE_UNUSED uint32_t len, void* userdata) {
+static bool extractI3Version(const char* line, FF_A_UNUSED uint32_t len, void* userdata) {
     int count = 0;
     sscanf(line, "%*d.%*d%n", &count);
     if (count == 0) {
@@ -205,7 +214,7 @@ static const char* getI3(FFstrbuf* result) {
         return NULL;
     }
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {path.chars, "--version", NULL}) == NULL) { // i3 version 1.10 C 2009...
+    if (ffProcessAppendStdOut(result, (char* const[]) { path.chars, "--version", NULL }) == NULL) { // i3 version 1.10 C 2009...
         ffStrbufSubstrAfterFirstS(result, "version ");
         ffStrbufSubstrBeforeFirstC(result, ' ');
         return NULL;
@@ -226,7 +235,7 @@ static const char* getCtwm(FFstrbuf* result) {
         return NULL;
     }
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {path.chars, "--version", NULL}) == NULL) { // ctwm version 4.0.1\n...
+    if (ffProcessAppendStdOut(result, (char* const[]) { path.chars, "--version", NULL }) == NULL) { // ctwm version 4.0.1\n...
         ffStrbufSubstrBeforeFirstC(result, '\n');
         ffStrbufSubstrAfterLastC(result, ' ');
         return NULL;
@@ -247,7 +256,7 @@ static const char* getFvwm(FFstrbuf* result) {
         return NULL;
     }
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {path.chars, "-version", NULL}) == NULL) { // [FVWM][main]: fvwm Version 2.2.5\n...
+    if (ffProcessAppendStdOut(result, (char* const[]) { path.chars, "-version", NULL }) == NULL) { // [FVWM][main]: fvwm Version 2.2.5\n...
         ffStrbufSubstrBeforeFirstC(result, '\n');
         ffStrbufSubstrAfterLastC(result, ' ');
         return NULL;
@@ -268,7 +277,7 @@ static const char* getOpenbox(FFstrbuf* result) {
         return NULL;
     }
 
-    if (ffProcessAppendStdOut(result, (char* const[]) {path.chars, "--version", NULL}) == NULL) { // Openbox 3.6.1\n...
+    if (ffProcessAppendStdOut(result, (char* const[]) { path.chars, "--version", NULL }) == NULL) { // Openbox 3.6.1\n...
         ffStrbufSubstrBeforeFirstC(result, '\n');
         ffStrbufSubstrAfterLastC(result, ' ');
         return NULL;
@@ -277,7 +286,7 @@ static const char* getOpenbox(FFstrbuf* result) {
     return "Failed to run command `openbox --version`";
 }
 
-const char* ffDetectWMVersion(const FFstrbuf* wmName, FFstrbuf* result, FF_MAYBE_UNUSED FFWMOptions* options) {
+const char* ffDetectWMVersion(const FFstrbuf* wmName, FFstrbuf* result, FF_A_UNUSED FFWMOptions* options) {
     if (!wmName) {
         return "No WM detected";
     }
@@ -300,11 +309,11 @@ const char* ffDetectWMVersion(const FFstrbuf* wmName, FFstrbuf* result, FF_MAYBE
         return getNiri(result);
     }
 
-#    if __linux__
+    #if __linux__
     if (ffStrbufEqualS(wmName, "WSLg")) {
         return getWslg(result);
     }
-#    endif
+    #endif
 #endif
 
     // X11 WMs

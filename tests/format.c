@@ -7,7 +7,7 @@
 static void verify(const char* format, const char* arg, const char* expected, int lineNo) {
     FF_STRBUF_AUTO_DESTROY result = ffStrbufCreate();
     FF_STRBUF_AUTO_DESTROY formatter = ffStrbufCreateStatic(format);
-    const FFformatarg arguments[] = { {.type = FF_ARG_TYPE_STRING, arg}};
+    const FFformatarg arguments[] = { { .type = FF_ARG_TYPE_STRING, arg } };
     ffParseFormatString(&result, &formatter, 1, arguments);
     if (!ffStrbufEqualS(&result, expected)) {
         fprintf(stderr, FASTFETCH_TEXT_MODIFIER_ERROR "[%d] %s: expected \"%s\", got \"%s\"\n" FASTFETCH_TEXT_MODIFIER_RESET, lineNo, format, expected, result.chars);
@@ -112,9 +112,9 @@ int main(void) {
 
 #ifndef _WIN32 // Windows doesn't have setenv
     {
-        ffListInit(&instance.config.display.constants, sizeof(FFstrbuf));
-        ffStrbufInitStatic(ffListAdd(&instance.config.display.constants), "CONST1");
-        ffStrbufInitStatic(ffListAdd(&instance.config.display.constants), "CONST2");
+        ffListInit(&instance.config.display.constants);
+        ffStrbufInitStatic(FF_LIST_ADD(FFstrbuf, instance.config.display.constants), "CONST1");
+        ffStrbufInitStatic(FF_LIST_ADD(FFstrbuf, instance.config.display.constants), "CONST2");
         setenv("FF_TEST", "ENVVAR", 1);
         VERIFY("output({$FF_TEST})", "", "output(ENVVAR)");
         VERIFY("output({$1})", "", "output(CONST1)");

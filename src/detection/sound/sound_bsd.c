@@ -6,7 +6,7 @@
 #include <sys/soundcard.h>
 #include <unistd.h>
 
-const char* ffDetectSound(FFlist* devices) {
+const char* ffDetectSound(FFSoundOptions* options, FFlist* devices) {
 #ifndef __NetBSD__
     int defaultDev = ffSysctlGetInt("hw.snd.default_unit", -1);
     if (defaultDev == -1) {
@@ -29,9 +29,14 @@ const char* ffDetectSound(FFlist* devices) {
 
     char path[] = "/dev/mixer0";
 
-    struct oss_sysinfo info = {.nummixers = 9};
+    struct oss_sysinfo info = { .nummixers = 9 };
 
     for (int idev = 0; idev <= info.nummixers; ++idev) {
+        bool isMain = idev == defaultDev;
+        if ((options->soundType & FF_SOUND_TYPE_MAIN) && !isMain) {
+            continue;
+        }
+
         path[strlen("/dev/mixer")] = (char) ('0' + idev);
         FF_AUTO_CLOSE_FD int fd = open(path, O_RDWR | O_CLOEXEC);
         if (fd < 0) {
@@ -53,12 +58,12 @@ const char* ffDetectSound(FFlist* devices) {
         }
 
 #if defined(SOUND_MIXER_MUTE) && (SOUND_MIXER_MUTE != SOUND_MIXER_NONE)
-#    define FF_SOUND_HAVE_MIXER_MUTE 1
+    #define FF_SOUND_HAVE_MIXER_MUTE 1
         uint32_t mutemask = 0;
         ioctl(fd, SOUND_MIXER_READ_MUTE, &mutemask);
 #endif
 
-        struct oss_card_info ci = {.card = idev};
+        struct oss_card_info ci = { .card = idev };
         if (ioctl(fd, SNDCTL_CARDINFO, &ci) < 0) {
             continue;
         }
@@ -68,7 +73,7 @@ const char* ffDetectSound(FFlist* devices) {
             continue;
         }
 
-        FFSoundDevice* device = ffListAdd(devices);
+        FFSoundDevice* device = FF_LIST_ADD(FFSoundDevice, *devices);
         ffStrbufInitS(&device->identifier, path);
         ffStrbufInitF(&device->name, "%s %s", ci.longname, ci.hw_info);
         ffStrbufTrimRightSpace(&device->name);
@@ -78,8 +83,7 @@ const char* ffDetectSound(FFlist* devices) {
             mutemask & SOUND_MASK_VOLUME ? 0 :
 #endif
                                          ((uint8_t) volume /*left*/ + (uint8_t) (volume >> 8) /*right*/) / 2;
-        device->active = true;
-        device->main = defaultDev == idev;
+        device->type = FF_SOUND_TYPE_ACTIVE | (isMain ? FF_SOUND_TYPE_MAIN : FF_SOUND_TYPE_NONE);
     }
 
     return NULL;

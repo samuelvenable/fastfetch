@@ -16,7 +16,7 @@ bool ffPrintLocale(FFLocaleOptions* options) {
         ffPrintLogoAndKey(FF_LOCALE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT);
         ffStrbufPutTo(&locale, stdout);
     } else {
-        FF_PRINT_FORMAT_CHECKED(FF_LOCALE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) {FF_ARG(locale, "result")}));
+        FF_PRINT_FORMAT_CHECKED(FF_LOCALE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) { FF_ARG(locale, "result") }));
     }
 
     return true;
@@ -38,7 +38,7 @@ void ffGenerateLocaleJsonConfig(FFLocaleOptions* options, yyjson_mut_doc* doc, y
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateLocaleJsonResult(FF_MAYBE_UNUSED FFLocaleOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateLocaleJsonResult(FF_A_UNUSED FFLocaleOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FF_STRBUF_AUTO_DESTROY locale = ffStrbufCreate();
 
     const char* error = ffDetectLocale(&locale);
@@ -76,5 +76,6 @@ FFModuleBaseInfo ffLocaleModuleInfo = {
     .generateJsonResult = (void*) ffGenerateLocaleJsonResult,
     .generateJsonConfig = (void*) ffGenerateLocaleJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Locale code", "result"},
-    }))};
+        { "Locale code", "result" },
+    }))
+};

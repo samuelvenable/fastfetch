@@ -14,12 +14,12 @@ const char* ffNetIOGetIoCounters(FFlist* result, FFNetIOOptions* options) {
     uint32_t defaultRouteIfIndex = ffNetifGetDefaultRouteV4()->ifIndex;
 
     size_t bufSize = 0;
-    if (sysctl((int[]) {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, (options->defaultRouteOnly ? (int) defaultRouteIfIndex : 0)}, 6, NULL, &bufSize, 0, 0) < 0) {
+    if (sysctl((int[]) { CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, (options->defaultRouteOnly ? (int) defaultRouteIfIndex : 0) }, 6, NULL, &bufSize, 0, 0) < 0) {
         return "sysctl({ CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, ifIndex }, 6, NULL, &bufSize, 0, 0) failed";
     }
 
     FF_AUTO_FREE struct if_msghdr* buf = (struct if_msghdr*) malloc(bufSize);
-    if (sysctl((int[]) {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, (options->defaultRouteOnly ? (int) defaultRouteIfIndex : 0)}, 6, buf, &bufSize, 0, 0) < 0) {
+    if (sysctl((int[]) { CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, (options->defaultRouteOnly ? (int) defaultRouteIfIndex : 0) }, 6, buf, &bufSize, 0, 0) < 0) {
         return "sysctl({ CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, ifIndex }, 6, buf, &bufSize, 0, 0) failed";
     }
 
@@ -39,7 +39,7 @@ const char* ffNetIOGetIoCounters(FFlist* result, FFNetIOOptions* options) {
             continue;
         }
 
-        FFNetIOResult* counters = (FFNetIOResult*) ffListAdd(result);
+        FFNetIOResult* counters = FF_LIST_ADD(FFNetIOResult, *result);
         *counters = (FFNetIOResult) {
             .name = ffStrbufCreateNS(sdl->sdl_nlen, sdl->sdl_data),
             .txBytes = ifm->ifm_data.ifi_obytes,

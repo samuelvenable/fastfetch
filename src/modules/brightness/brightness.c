@@ -6,7 +6,7 @@
 #include "modules/brightness/brightness.h"
 
 bool ffPrintBrightness(FFBrightnessOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFBrightnessResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectBrightness(options, &result);
 
@@ -140,8 +140,8 @@ void ffGenerateBrightnessJsonConfig(FFBrightnessOptions* options, yyjson_mut_doc
     yyjson_mut_obj_add_bool(doc, module, "compact", options->compact);
 }
 
-bool ffGenerateBrightnessJsonResult(FF_MAYBE_UNUSED FFBrightnessOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFBrightnessResult));
+bool ffGenerateBrightnessJsonResult(FF_A_UNUSED FFBrightnessOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectBrightness(options, &result);
 
@@ -173,7 +173,7 @@ void ffInitBrightnessOptions(FFBrightnessOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "󰯪");
 
     options->ddcciSleep = 10;
-    options->percent = (FFPercentageModuleConfig) {100, 100, 0};
+    options->percent = (FFPercentageModuleConfig) { 100, 100, 0 };
     options->compact = false;
 }
 
@@ -183,7 +183,7 @@ void ffDestroyBrightnessOptions(FFBrightnessOptions* options) {
 
 FFModuleBaseInfo ffBrightnessModuleInfo = {
     .name = FF_BRIGHTNESS_MODULE_NAME,
-    .description = "Print current brightness level of your monitors",
+    .description = "Print the current brightness level of your monitors",
     .initOptions = (void*) ffInitBrightnessOptions,
     .destroyOptions = (void*) ffDestroyBrightnessOptions,
     .parseJsonObject = (void*) ffParseBrightnessJsonObject,
@@ -191,11 +191,12 @@ FFModuleBaseInfo ffBrightnessModuleInfo = {
     .generateJsonResult = (void*) ffGenerateBrightnessJsonResult,
     .generateJsonConfig = (void*) ffGenerateBrightnessJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Screen brightness (percentage num)", "percentage"},
-        {"Screen name", "name"},
-        {"Maximum brightness value", "max"},
-        {"Minimum brightness value", "min"},
-        {"Current brightness value", "current"},
-        {"Screen brightness (percentage bar)", "percentage-bar"},
-        {"Is built-in screen", "is-builtin"},
-    }))};
+        { "Screen brightness (percentage num)", "percentage" },
+        { "Screen name", "name" },
+        { "Maximum brightness value", "max" },
+        { "Minimum brightness value", "min" },
+        { "Current brightness value", "current" },
+        { "Screen brightness (percentage bar)", "percentage-bar" },
+        { "Is built-in screen", "is-builtin" },
+    }))
+};

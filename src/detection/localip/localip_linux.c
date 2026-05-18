@@ -16,27 +16,27 @@
 #include <fcntl.h>
 
 #ifdef __linux__
-#    include <linux/ethtool.h>
-#    include <linux/sockios.h>
-#    include <linux/if.h>
-#    include <linux/if_addr.h>
+    #include <linux/ethtool.h>
+    #include <linux/sockios.h>
+    #include <linux/if.h>
+    #include <linux/if_addr.h>
 #endif
 
 #if __has_include(<netinet6/in6_var.h>)
-#    include <netinet6/in6_var.h>
+    #include <netinet6/in6_var.h>
 #endif
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__NetBSD__) || defined(__HAIKU__)
-#    include <net/if_media.h>
-#    include <net/if_dl.h>
+    #include <net/if_media.h>
+    #include <net/if_dl.h>
 #elif !defined(__GNU__)
-#    include <netpacket/packet.h>
+    #include <netpacket/packet.h>
 #endif
 #if defined(__sun) || defined(__HAIKU__)
-#    include <sys/sockio.h>
+    #include <sys/sockio.h>
 #endif
 #if defined(__sun)
-#    include <kstat.h>
+    #include <kstat.h>
 
 static inline void kstatFreeWrap(kstat_ctl_t** pkc) {
     assert(pkc);
@@ -46,7 +46,7 @@ static inline void kstatFreeWrap(kstat_ctl_t** pkc) {
 }
 #endif
 
-#define FF_LOCALIP_NIFLAG(name) {IFF_##name, #name}
+#define FF_LOCALIP_NIFLAG(name) { IFF_##name, #name }
 
 static const FFLocalIpNIFlag niFlagOptions[] = {
     FF_LOCALIP_NIFLAG(UP),
@@ -135,16 +135,16 @@ static FFLocalIpIpv6Type getIpv6Type(struct ifaddrs* ifa) {
     static int sockfd = 0;
     if (sockfd == 0) {
         sockfd = socket(AF_INET6, SOCK_DGRAM
-#    ifdef SOCK_CLOEXEC
+    #ifdef SOCK_CLOEXEC
                 | SOCK_CLOEXEC
-#    endif
+    #endif
             ,
             0);
-#    ifndef SOCK_CLOEXEC
+    #ifndef SOCK_CLOEXEC
         if (sockfd > 0) {
             fcntl(sockfd, F_SETFD, FD_CLOEXEC);
         }
-#    endif
+    #endif
     }
     if (sockfd < 0) {
         return result;
@@ -158,22 +158,24 @@ static FFLocalIpIpv6Type getIpv6Type(struct ifaddrs* ifa) {
         return result;
     }
 
-#    ifdef IN6_IFF_PREFER_SOURCE
+    #ifdef IN6_IFF_PREFER_SOURCE
     if (ifr6.ifr_ifru.ifru_flags6 & IN6_IFF_PREFER_SOURCE) {
         result |= FF_LOCALIP_IPV6_TYPE_PREFERRED_BIT;
     }
-#    endif
+    #endif
     if (ifr6.ifr_ifru.ifru_flags6 & (IN6_IFF_DEPRECATED | IN6_IFF_TEMPORARY | IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED
-#    ifdef IN6_IFF_OPTIMISTIC
+    #ifdef IN6_IFF_OPTIMISTIC
                                         | IN6_IFF_OPTIMISTIC
-#    endif
+    #endif
                                         ))
         result |= FF_LOCALIP_IPV6_TYPE_SECONDARY_BIT;
     return result;
 #elif __linux__
     static FFlist addresses = {};
-    if (addresses.elementSize == 0) {
-        ffListInit(&addresses, sizeof(struct in6_addr));
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = true;
+        ffListInit(&addresses);
         FF_STRBUF_AUTO_DESTROY buffer = ffStrbufCreate();
         if (!ffReadFileBuffer("/proc/net/if_inet6", &buffer)) {
             return result;
@@ -182,7 +184,7 @@ static FFLocalIpIpv6Type getIpv6Type(struct ifaddrs* ifa) {
         char* line = NULL;
         size_t len = 0;
         while (ffStrbufGetline(&line, &len, &buffer)) {
-            struct in6_addr* entry = (struct in6_addr*) ffListAdd(&addresses);
+            struct in6_addr* entry = FF_LIST_ADD(struct in6_addr, addresses);
             uint8_t flags;
             if (sscanf(line, "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 " %*s %*s %*s %" SCNx8 " %*s", &entry->s6_addr[0], &entry->s6_addr[1], &entry->s6_addr[2], &entry->s6_addr[3], &entry->s6_addr[4], &entry->s6_addr[5], &entry->s6_addr[6], &entry->s6_addr[7], &entry->s6_addr[8], &entry->s6_addr[9], &entry->s6_addr[10], &entry->s6_addr[11], &entry->s6_addr[12], &entry->s6_addr[13], &entry->s6_addr[14], &entry->s6_addr[15], &flags) != 17 ||
                 (!IN6_IS_ADDR_GLOBAL(entry) && !IN6_IS_ADDR_UNIQUE_LOCAL(entry)) ||
@@ -284,7 +286,7 @@ const char* ffDetectLocalIps(const FFLocalIpOptions* options, FFlist* results) {
 
     FF_DEBUG("Successfully retrieved interface addresses");
 
-    FF_LIST_AUTO_DESTROY adapters = ffListCreate(sizeof(FFAdapter));
+    FF_LIST_AUTO_DESTROY adapters = ffListCreate();
 
     for (struct ifaddrs* ifa = ifAddrStruct; ifa; ifa = ifa->ifa_next) {
         if (!ifa->ifa_addr) {
@@ -341,11 +343,11 @@ const char* ffDetectLocalIps(const FFLocalIpOptions* options, FFlist* results) {
             }
         }
         if (!adapter) {
-            adapter = ffListAdd(&adapters);
+            adapter = FF_LIST_ADD(FFAdapter, adapters);
             *adapter = (FFAdapter) {
                 .mac = ifa,
-                .ipv4 = ffListCreate(sizeof(struct ifaddrs*)),
-                .ipv6 = ffListCreate(sizeof(struct ifaddrs*)),
+                .ipv4 = ffListCreate(),
+                .ipv6 = ffListCreate(),
             };
             FF_DEBUG("Created new adapter entry for interface %s", ifa->ifa_name);
         }
@@ -517,11 +519,11 @@ const char* ffDetectLocalIps(const FFLocalIpOptions* options, FFlist* results) {
 #if !defined(__sun) && !defined(__GNU__)
         if (options->showType & FF_LOCALIP_TYPE_MAC_BIT) {
             if (adapter->mac->ifa_addr) {
-#    if __FreeBSD__ || __OpenBSD__ || __APPLE__ || __NetBSD__ || __HAIKU__
+    #if __FreeBSD__ || __OpenBSD__ || __APPLE__ || __NetBSD__ || __HAIKU__
                 uint8_t* ptr = (uint8_t*) LLADDR((struct sockaddr_dl*) adapter->mac->ifa_addr);
-#    else
+    #else
                 uint8_t* ptr = ((struct sockaddr_ll*) adapter->mac->ifa_addr)->sll_addr;
-#    endif
+    #endif
                 ffStrbufSetF(&item->mac, "%02x:%02x:%02x:%02x:%02x:%02x", ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
                 FF_DEBUG("Added MAC address %s for interface %s", item->mac.chars, adapter->mac->ifa_name);
             } else {
@@ -567,7 +569,7 @@ const char* ffDetectLocalIps(const FFLocalIpOptions* options, FFlist* results) {
 
                 if (options->showType & FF_LOCALIP_TYPE_SPEED_BIT) {
 #ifdef __linux__
-                    struct ethtool_cmd edata = {.cmd = ETHTOOL_GSET};
+                    struct ethtool_cmd edata = { .cmd = ETHTOOL_GSET };
                     ifr.ifr_data = (void*) &edata;
                     if (ioctl(sockfd, SIOCETHTOOL, &ifr) == 0) {
                         iface->speed = (edata.speed_hi << 16) | edata.speed;
@@ -582,379 +584,379 @@ const char* ffDetectLocalIps(const FFLocalIpOptions* options, FFlist* results) {
                     if (ioctl(sockfd, SIOCGIFMEDIA, &ifmr) == 0 && (IFM_TYPE(ifmr.ifm_active) & IFM_ETHER)) {
                         FF_DEBUG("Interface %s media type: 0x%x", iface->name.chars, (unsigned) IFM_SUBTYPE(ifmr.ifm_active));
                         switch (IFM_SUBTYPE(ifmr.ifm_active)) {
-#    ifdef IFM_HPNA_1
+    #ifdef IFM_HPNA_1
                             case IFM_HPNA_1:
-#    endif
+    #endif
                                 iface->speed = 1;
                                 break;
-#    ifdef IFM_1000_CX
+    #ifdef IFM_1000_CX
                             case IFM_1000_CX:
-#    endif
-#    ifdef IFM_1000_CX_SGMII
+    #endif
+    #ifdef IFM_1000_CX_SGMII
                             case IFM_1000_CX_SGMII:
-#    endif
-#    ifdef IFM_1000_KX
+    #endif
+    #ifdef IFM_1000_KX
                             case IFM_1000_KX:
-#    endif
-#    ifdef IFM_1000_LX
+    #endif
+    #ifdef IFM_1000_LX
                             case IFM_1000_LX:
-#    endif
-#    ifdef IFM_1000_SGMII
+    #endif
+    #ifdef IFM_1000_SGMII
                             case IFM_1000_SGMII:
-#    endif
-#    ifdef IFM_1000_SX
+    #endif
+    #ifdef IFM_1000_SX
                             case IFM_1000_SX:
-#    endif
-#    ifdef IFM_1000_T
+    #endif
+    #ifdef IFM_1000_T
                             case IFM_1000_T:
-#    endif
+    #endif
                                 iface->speed = 1000;
                                 break;
-#    ifdef IFM_100G_AUI2
+    #ifdef IFM_100G_AUI2
                             case IFM_100G_AUI2:
-#    endif
-#    ifdef IFM_100G_AUI2_AC
+    #endif
+    #ifdef IFM_100G_AUI2_AC
                             case IFM_100G_AUI2_AC:
-#    endif
-#    ifdef IFM_100G_AUI4
+    #endif
+    #ifdef IFM_100G_AUI4
                             case IFM_100G_AUI4:
-#    endif
-#    ifdef IFM_100G_AUI4_AC
+    #endif
+    #ifdef IFM_100G_AUI4_AC
                             case IFM_100G_AUI4_AC:
-#    endif
-#    ifdef IFM_100G_CAUI2
+    #endif
+    #ifdef IFM_100G_CAUI2
                             case IFM_100G_CAUI2:
-#    endif
-#    ifdef IFM_100G_CAUI2_AC
+    #endif
+    #ifdef IFM_100G_CAUI2_AC
                             case IFM_100G_CAUI2_AC:
-#    endif
-#    ifdef IFM_100G_CAUI4
+    #endif
+    #ifdef IFM_100G_CAUI4
                             case IFM_100G_CAUI4:
-#    endif
-#    ifdef IFM_100G_CAUI4_AC
+    #endif
+    #ifdef IFM_100G_CAUI4_AC
                             case IFM_100G_CAUI4_AC:
-#    endif
-#    ifdef IFM_100G_CP2
+    #endif
+    #ifdef IFM_100G_CP2
                             case IFM_100G_CP2:
-#    endif
-#    ifdef IFM_100G_CR4
+    #endif
+    #ifdef IFM_100G_CR4
                             case IFM_100G_CR4:
-#    endif
-#    ifdef IFM_100G_CR_PAM4
+    #endif
+    #ifdef IFM_100G_CR_PAM4
                             case IFM_100G_CR_PAM4:
-#    endif
-#    ifdef IFM_100G_DR
+    #endif
+    #ifdef IFM_100G_DR
                             case IFM_100G_DR:
-#    endif
-#    ifdef IFM_100G_KR2_PAM4
+    #endif
+    #ifdef IFM_100G_KR2_PAM4
                             case IFM_100G_KR2_PAM4:
-#    endif
-#    ifdef IFM_100G_KR4
+    #endif
+    #ifdef IFM_100G_KR4
                             case IFM_100G_KR4:
-#    endif
-#    ifdef IFM_100G_KR_PAM4
+    #endif
+    #ifdef IFM_100G_KR_PAM4
                             case IFM_100G_KR_PAM4:
-#    endif
-#    ifdef IFM_100G_LR4
+    #endif
+    #ifdef IFM_100G_LR4
                             case IFM_100G_LR4:
-#    endif
-#    ifdef IFM_100G_SR2
+    #endif
+    #ifdef IFM_100G_SR2
                             case IFM_100G_SR2:
-#    endif
-#    ifdef IFM_100G_SR4
+    #endif
+    #ifdef IFM_100G_SR4
                             case IFM_100G_SR4:
-#    endif
+    #endif
                                 iface->speed = 100000;
                                 break;
-#    ifdef IFM_100_FX
+    #ifdef IFM_100_FX
                             case IFM_100_FX:
-#    endif
-#    ifdef IFM_100_SGMII
+    #endif
+    #ifdef IFM_100_SGMII
                             case IFM_100_SGMII:
-#    endif
-#    ifdef IFM_100_T
+    #endif
+    #ifdef IFM_100_T
                             case IFM_100_T:
-#    endif
-#    ifdef IFM_100_T2
+    #endif
+    #ifdef IFM_100_T2
                             case IFM_100_T2:
-#    endif
-#    ifdef IFM_100_T4
+    #endif
+    #ifdef IFM_100_T4
                             case IFM_100_T4:
-#    endif
-#    ifdef IFM_100_TX
+    #endif
+    #ifdef IFM_100_TX
                             case IFM_100_TX:
-#    endif
-#    ifdef IFM_100_VG
+    #endif
+    #ifdef IFM_100_VG
                             case IFM_100_VG:
-#    endif
+    #endif
                                 iface->speed = 100;
                                 break;
-#    ifdef IFM_10G_AOC
+    #ifdef IFM_10G_AOC
                             case IFM_10G_AOC:
-#    endif
-#    ifdef IFM_10G_CR1
+    #endif
+    #ifdef IFM_10G_CR1
                             case IFM_10G_CR1:
-#    endif
-#    ifdef IFM_10G_CX4
+    #endif
+    #ifdef IFM_10G_CX4
                             case IFM_10G_CX4:
-#    endif
-#    ifdef IFM_10G_ER
+    #endif
+    #ifdef IFM_10G_ER
                             case IFM_10G_ER:
-#    endif
-#    ifdef IFM_10G_KR
+    #endif
+    #ifdef IFM_10G_KR
                             case IFM_10G_KR:
-#    endif
-#    ifdef IFM_10G_KX4
+    #endif
+    #ifdef IFM_10G_KX4
                             case IFM_10G_KX4:
-#    endif
-#    ifdef IFM_10G_LR
+    #endif
+    #ifdef IFM_10G_LR
                             case IFM_10G_LR:
-#    endif
-#    ifdef IFM_10G_LRM
+    #endif
+    #ifdef IFM_10G_LRM
                             case IFM_10G_LRM:
-#    endif
-#    ifdef IFM_10G_SFI
+    #endif
+    #ifdef IFM_10G_SFI
                             case IFM_10G_SFI:
-#    endif
-#    ifdef IFM_10G_SR
+    #endif
+    #ifdef IFM_10G_SR
                             case IFM_10G_SR:
-#    endif
-#    ifdef IFM_10G_T
+    #endif
+    #ifdef IFM_10G_T
                             case IFM_10G_T:
-#    endif
-#    ifdef IFM_10G_TWINAX
+    #endif
+    #ifdef IFM_10G_TWINAX
                             case IFM_10G_TWINAX:
-#    endif
-#    ifdef IFM_10G_TWINAX_LONG
+    #endif
+    #ifdef IFM_10G_TWINAX_LONG
                             case IFM_10G_TWINAX_LONG:
-#    endif
+    #endif
                                 iface->speed = 10000;
                                 break;
-#    ifdef IFM_10_2
+    #ifdef IFM_10_2
                             case IFM_10_2:
-#    endif
-#    ifdef IFM_10_5
+    #endif
+    #ifdef IFM_10_5
                             case IFM_10_5:
-#    endif
-#    ifdef IFM_10_FL
+    #endif
+    #ifdef IFM_10_FL
                             case IFM_10_FL:
-#    endif
-#    ifdef IFM_10_STP
+    #endif
+    #ifdef IFM_10_STP
                             case IFM_10_STP:
-#    endif
-#    ifdef IFM_10_T
+    #endif
+    #ifdef IFM_10_T
                             case IFM_10_T:
-#    endif
+    #endif
                                 iface->speed = 10;
                                 break;
-#    ifdef IFM_200G_AUI4
+    #ifdef IFM_200G_AUI4
                             case IFM_200G_AUI4:
-#    endif
-#    ifdef IFM_200G_AUI4_AC
+    #endif
+    #ifdef IFM_200G_AUI4_AC
                             case IFM_200G_AUI4_AC:
-#    endif
-#    ifdef IFM_200G_AUI8
+    #endif
+    #ifdef IFM_200G_AUI8
                             case IFM_200G_AUI8:
-#    endif
-#    ifdef IFM_200G_AUI8_AC
+    #endif
+    #ifdef IFM_200G_AUI8_AC
                             case IFM_200G_AUI8_AC:
-#    endif
-#    ifdef IFM_200G_CR4_PAM4
+    #endif
+    #ifdef IFM_200G_CR4_PAM4
                             case IFM_200G_CR4_PAM4:
-#    endif
-#    ifdef IFM_200G_DR4
+    #endif
+    #ifdef IFM_200G_DR4
                             case IFM_200G_DR4:
-#    endif
-#    ifdef IFM_200G_FR4
+    #endif
+    #ifdef IFM_200G_FR4
                             case IFM_200G_FR4:
-#    endif
-#    ifdef IFM_200G_KR4_PAM4
+    #endif
+    #ifdef IFM_200G_KR4_PAM4
                             case IFM_200G_KR4_PAM4:
-#    endif
-#    ifdef IFM_200G_LR4
+    #endif
+    #ifdef IFM_200G_LR4
                             case IFM_200G_LR4:
-#    endif
-#    ifdef IFM_200G_SR4
+    #endif
+    #ifdef IFM_200G_SR4
                             case IFM_200G_SR4:
-#    endif
+    #endif
                                 iface->speed = 200000;
                                 break;
-#    ifdef IFM_20G_KR2
+    #ifdef IFM_20G_KR2
                             case IFM_20G_KR2:
-#    endif
+    #endif
                                 iface->speed = 20000;
                                 break;
-#    ifdef IFM_2500_KX
+    #ifdef IFM_2500_KX
                             case IFM_2500_KX:
-#    endif
-#    ifdef IFM_2500_SX
+    #endif
+    #ifdef IFM_2500_SX
                             case IFM_2500_SX:
-#    endif
-#    ifdef IFM_2500_T
+    #endif
+    #ifdef IFM_2500_T
                             case IFM_2500_T:
-#    endif
-#    ifdef IFM_2500_X
+    #endif
+    #ifdef IFM_2500_X
                             case IFM_2500_X:
-#    endif
+    #endif
                                 iface->speed = 2500;
                                 break;
-#    ifdef IFM_25G_ACC
+    #ifdef IFM_25G_ACC
                             case IFM_25G_ACC:
-#    endif
-#    ifdef IFM_25G_AOC
+    #endif
+    #ifdef IFM_25G_AOC
                             case IFM_25G_AOC:
-#    endif
-#    ifdef IFM_25G_AUI
+    #endif
+    #ifdef IFM_25G_AUI
                             case IFM_25G_AUI:
-#    endif
-#    ifdef IFM_25G_CR
+    #endif
+    #ifdef IFM_25G_CR
                             case IFM_25G_CR:
-#    endif
-#    ifdef IFM_25G_CR1
+    #endif
+    #ifdef IFM_25G_CR1
                             case IFM_25G_CR1:
-#    endif
-#    ifdef IFM_25G_CR_S
+    #endif
+    #ifdef IFM_25G_CR_S
                             case IFM_25G_CR_S:
-#    endif
-#    ifdef IFM_25G_KR
+    #endif
+    #ifdef IFM_25G_KR
                             case IFM_25G_KR:
-#    endif
-#    ifdef IFM_25G_KR1
+    #endif
+    #ifdef IFM_25G_KR1
                             case IFM_25G_KR1:
-#    endif
-#    ifdef IFM_25G_KR_S
+    #endif
+    #ifdef IFM_25G_KR_S
                             case IFM_25G_KR_S:
-#    endif
-#    ifdef IFM_25G_LR
+    #endif
+    #ifdef IFM_25G_LR
                             case IFM_25G_LR:
-#    endif
-#    ifdef IFM_25G_PCIE
+    #endif
+    #ifdef IFM_25G_PCIE
                             case IFM_25G_PCIE:
-#    endif
-#    ifdef IFM_25G_SR
+    #endif
+    #ifdef IFM_25G_SR
                             case IFM_25G_SR:
-#    endif
-#    ifdef IFM_25G_T
+    #endif
+    #ifdef IFM_25G_T
                             case IFM_25G_T:
-#    endif
+    #endif
                                 iface->speed = 25000;
                                 break;
-#    ifdef IFM_400G_AUI8
+    #ifdef IFM_400G_AUI8
                             case IFM_400G_AUI8:
-#    endif
-#    ifdef IFM_400G_AUI8_AC
+    #endif
+    #ifdef IFM_400G_AUI8_AC
                             case IFM_400G_AUI8_AC:
-#    endif
-#    ifdef IFM_400G_DR4
+    #endif
+    #ifdef IFM_400G_DR4
                             case IFM_400G_DR4:
-#    endif
-#    ifdef IFM_400G_FR8
+    #endif
+    #ifdef IFM_400G_FR8
                             case IFM_400G_FR8:
-#    endif
-#    ifdef IFM_400G_LR8
+    #endif
+    #ifdef IFM_400G_LR8
                             case IFM_400G_LR8:
-#    endif
+    #endif
                                 iface->speed = 400000;
                                 break;
-#    ifdef IFM_40G_CR4
+    #ifdef IFM_40G_CR4
                             case IFM_40G_CR4:
-#    endif
-#    ifdef IFM_40G_ER4
+    #endif
+    #ifdef IFM_40G_ER4
                             case IFM_40G_ER4:
-#    endif
-#    ifdef IFM_40G_KR4
+    #endif
+    #ifdef IFM_40G_KR4
                             case IFM_40G_KR4:
-#    endif
-#    ifdef IFM_40G_LR4
+    #endif
+    #ifdef IFM_40G_LR4
                             case IFM_40G_LR4:
-#    endif
-#    ifdef IFM_40G_SR4
+    #endif
+    #ifdef IFM_40G_SR4
                             case IFM_40G_SR4:
-#    endif
-#    ifdef IFM_40G_XLAUI
+    #endif
+    #ifdef IFM_40G_XLAUI
                             case IFM_40G_XLAUI:
-#    endif
-#    ifdef IFM_40G_XLAUI_AC
+    #endif
+    #ifdef IFM_40G_XLAUI_AC
                             case IFM_40G_XLAUI_AC:
-#    endif
-#    ifdef IFM_40G_XLPPI
+    #endif
+    #ifdef IFM_40G_XLPPI
                             case IFM_40G_XLPPI:
-#    endif
-#    ifdef IFM_40G_LM4
+    #endif
+    #ifdef IFM_40G_LM4
                             case IFM_40G_LM4:
-#    endif
+    #endif
                                 iface->speed = 40000;
                                 break;
-#    ifdef IFM_5000_KR
+    #ifdef IFM_5000_KR
                             case IFM_5000_KR:
-#    endif
-#    ifdef IFM_5000_KR1
+    #endif
+    #ifdef IFM_5000_KR1
                             case IFM_5000_KR1:
-#    endif
-#    ifdef IFM_5000_KR_S
+    #endif
+    #ifdef IFM_5000_KR_S
                             case IFM_5000_KR_S:
-#    endif
-#    ifdef IFM_5000_T
+    #endif
+    #ifdef IFM_5000_T
                             case IFM_5000_T:
-#    endif
+    #endif
                                 iface->speed = 5000;
                                 break;
-#    ifdef IFM_50G_AUI1
+    #ifdef IFM_50G_AUI1
                             case IFM_50G_AUI1:
-#    endif
-#    ifdef IFM_50G_AUI1_AC
+    #endif
+    #ifdef IFM_50G_AUI1_AC
                             case IFM_50G_AUI1_AC:
-#    endif
-#    ifdef IFM_50G_AUI2
+    #endif
+    #ifdef IFM_50G_AUI2
                             case IFM_50G_AUI2:
-#    endif
-#    ifdef IFM_50G_AUI2_AC
+    #endif
+    #ifdef IFM_50G_AUI2_AC
                             case IFM_50G_AUI2_AC:
-#    endif
-#    ifdef IFM_50G_CP
+    #endif
+    #ifdef IFM_50G_CP
                             case IFM_50G_CP:
-#    endif
-#    ifdef IFM_50G_CR2
+    #endif
+    #ifdef IFM_50G_CR2
                             case IFM_50G_CR2:
-#    endif
-#    ifdef IFM_50G_FR
+    #endif
+    #ifdef IFM_50G_FR
                             case IFM_50G_FR:
-#    endif
-#    ifdef IFM_50G_KR2
+    #endif
+    #ifdef IFM_50G_KR2
                             case IFM_50G_KR2:
-#    endif
-#    ifdef IFM_50G_KR_PAM4
+    #endif
+    #ifdef IFM_50G_KR_PAM4
                             case IFM_50G_KR_PAM4:
-#    endif
-#    ifdef IFM_50G_LAUI2
+    #endif
+    #ifdef IFM_50G_LAUI2
                             case IFM_50G_LAUI2:
-#    endif
-#    ifdef IFM_50G_LAUI2_AC
+    #endif
+    #ifdef IFM_50G_LAUI2_AC
                             case IFM_50G_LAUI2_AC:
-#    endif
-#    ifdef IFM_50G_LR
+    #endif
+    #ifdef IFM_50G_LR
                             case IFM_50G_LR:
-#    endif
-#    ifdef IFM_50G_LR2
+    #endif
+    #ifdef IFM_50G_LR2
                             case IFM_50G_LR2:
-#    endif
-#    ifdef IFM_50G_PCIE
+    #endif
+    #ifdef IFM_50G_PCIE
                             case IFM_50G_PCIE:
-#    endif
-#    ifdef IFM_50G_SR
+    #endif
+    #ifdef IFM_50G_SR
                             case IFM_50G_SR:
-#    endif
-#    ifdef IFM_50G_SR2
+    #endif
+    #ifdef IFM_50G_SR2
                             case IFM_50G_SR2:
-#    endif
-#    ifdef IFM_50G_KR4
+    #endif
+    #ifdef IFM_50G_KR4
                             case IFM_50G_KR4:
-#    endif
+    #endif
                                 iface->speed = 50000;
                                 break;
-#    ifdef IFM_56G_R4
+    #ifdef IFM_56G_R4
                             case IFM_56G_R4:
-#    endif
+    #endif
                                 iface->speed = 56000;
                                 break;
                             default:
@@ -980,7 +982,7 @@ const char* ffDetectLocalIps(const FFLocalIpOptions* options, FFlist* results) {
 #endif
 #if __sun
                 if (options->showType & FF_LOCALIP_TYPE_SPEED_BIT) {
-                    __attribute__((__cleanup__(kstatFreeWrap))) kstat_ctl_t* kc = kstat_open();
+                    FF_A_CLEANUP(kstatFreeWrap) kstat_ctl_t* kc = kstat_open();
                     for (kstat_t* ks = kc->kc_chain; ks; ks = ks->ks_next) {
                         if (!ffStrEquals(ks->ks_class, "net") || !ffStrEquals(ks->ks_module, "link")) {
                             continue;

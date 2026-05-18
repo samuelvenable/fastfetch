@@ -6,9 +6,9 @@
 #include <sys/pciio.h>
 #include <fcntl.h>
 #if __has_include(<dev/pci/pcireg.h>)
-#    include <dev/pci/pcireg.h> // FreeBSD
+    #include <dev/pci/pcireg.h> // FreeBSD
 #else
-#    include <bus/pci/pcireg.h> // DragonFly
+    #include <bus/pci/pcireg.h> // DragonFly
 #endif
 
 static void fillGPUTypeGeneric(FFGPUResult* gpu) {
@@ -31,10 +31,10 @@ static void fillGPUTypeGeneric(FFGPUResult* gpu) {
 }
 
 #if FF_HAVE_DRM
-#    include "common/library.h"
-#    include "common/stringUtils.h"
+    #include "common/library.h"
+    #include "common/stringUtils.h"
 
-#    include <xf86drm.h>
+    #include <xf86drm.h>
 
 static const char* detectByDrm(const FFGPUOptions* options, FFlist* gpus) {
     FF_LIBRARY_LOAD_MESSAGE(libdrm, "libdrm" FF_LIBRARY_EXTENSION, 2)
@@ -56,7 +56,7 @@ static const char* detectByDrm(const FFGPUOptions* options, FFlist* gpus) {
 
         const char* path = dev->nodes[DRM_NODE_PRIMARY];
 
-        FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+        FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
         ffStrbufInit(&gpu->vendor);
         ffStrbufInit(&gpu->name);
         ffStrbufInit(&gpu->driver);
@@ -179,7 +179,7 @@ static const char* detectByPci(const FFGPUOptions* options, FFlist* gpus) {
             continue; // Likely an auxiliary display controller (#2034)
         }
 
-        FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+        FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
         ffStrbufInitStatic(&gpu->vendor, ffGPUGetVendorString(pc->pc_vendor));
         ffStrbufInit(&gpu->name);
         ffStrbufInitS(&gpu->driver, pc->pd_name);

@@ -8,15 +8,15 @@
 #include <dirent.h>
 #include <errno.h>
 #ifndef __APPLE__
-#    include <poll.h>
+    #include <poll.h>
 #else
-#    include <sys/select.h>
+    #include <sys/select.h>
 #endif
 
 #if FF_HAVE_WORDEXP
-#    include <wordexp.h>
+    #include <wordexp.h>
 #else
-#    include <glob.h>
+    #include <glob.h>
 #endif
 
 static void createSubfolders(const char* fileName) {
@@ -112,12 +112,12 @@ bool ffPathExpandEnv(const char* in, FFstrbuf* out) {
 
     glob_t gb;
     if (glob(in, GLOB_NOSORT
-#    ifdef GLOB_TILDE
+    #ifdef GLOB_TILDE
                 | GLOB_TILDE
-#    endif
-#    ifdef GLOB_BRACE
+    #endif
+    #ifdef GLOB_BRACE
                 | GLOB_BRACE
-#    endif
+    #endif
             ,
             NULL,
             &gb) != 0)
@@ -164,7 +164,7 @@ const char* ffGetTerminalResponse(const char* request, int nParams, const char* 
 
 // Give the terminal some time to respond
 #ifndef __APPLE__
-    if (poll(&(struct pollfd) {.fd = ftty, .events = POLLIN}, 1, FF_IO_TERM_RESP_WAIT_MS) <= 0) {
+    if (poll(&(struct pollfd) { .fd = ftty, .events = POLLIN }, 1, FF_IO_TERM_RESP_WAIT_MS) <= 0) {
         return "poll(/dev/tty) timeout or failed";
     }
 #else
@@ -174,7 +174,7 @@ const char* ffGetTerminalResponse(const char* request, int nParams, const char* 
         fd_set rd;
         FD_ZERO(&rd);
         FD_SET(ftty, &rd);
-        if (select(ftty + 1, &rd, NULL, NULL, &(struct timeval) {.tv_sec = FF_IO_TERM_RESP_WAIT_MS / 1000, .tv_usec = (FF_IO_TERM_RESP_WAIT_MS % 1000) * 1000}) <= 0) {
+        if (select(ftty + 1, &rd, NULL, NULL, &(struct timeval) { .tv_sec = FF_IO_TERM_RESP_WAIT_MS / 1000, .tv_usec = (FF_IO_TERM_RESP_WAIT_MS % 1000) * 1000 }) <= 0) {
             return "select(/dev/tty) timeout or failed";
         }
     }
@@ -252,14 +252,15 @@ bool ffSuppressIO(bool suppress) {
 }
 
 void listFilesRecursively(uint32_t baseLength, FFstrbuf* folder, uint8_t indentation, const char* folderName, bool pretty) {
-    FF_AUTO_CLOSE_FD int dfd = open(folder->chars, O_RDONLY | O_CLOEXEC);
+    int dfd = open(folder->chars, O_RDONLY | O_CLOEXEC | O_DIRECTORY); // Ownership of dfd will be transformed to dir
     if (dfd < 0) {
         return;
     }
 
-    DIR* dir = fdopendir(dfd);
+    FF_AUTO_CLOSE_DIR DIR* dir = fdopendir(dfd);
     if (dir == NULL) {
-        return;
+        close(dfd);
+        return; // Should not happen
     }
 
     uint32_t folderLength = folder->length;
@@ -310,8 +311,6 @@ void listFilesRecursively(uint32_t baseLength, FFstrbuf* folder, uint8_t indenta
 
         puts(entry->d_name);
     }
-
-    closedir(dir);
 }
 
 void ffListFilesRecursively(const char* path, bool pretty) {

@@ -1,8 +1,8 @@
 extern "C" {
 #include "camera.h"
 #include "common/library.h"
+#include "common/windows/com.h"
 }
-#include "common/windows/com.hpp"
 #include "common/windows/unicode.hpp"
 #include "common/windows/util.hpp"
 
@@ -10,7 +10,7 @@ extern "C" {
 #include <mfapi.h>
 #include <mfidl.h>
 
-extern "C" const char* ffDetectCamera(FF_MAYBE_UNUSED FFlist* result) {
+extern "C" const char* ffDetectCamera(FF_A_UNUSED FFlist* result) {
     FF_LIBRARY_LOAD_MESSAGE(mfplat, "mfplat" FF_LIBRARY_EXTENSION, 1)
     FF_LIBRARY_LOAD_SYMBOL_MESSAGE(mfplat, MFCreateAttributes)
     FF_LIBRARY_LOAD_MESSAGE(mf, "mf" FF_LIBRARY_EXTENSION, 1)
@@ -48,7 +48,7 @@ extern "C" const char* ffDetectCamera(FF_MAYBE_UNUSED FFlist* result) {
             continue;
         }
 
-        FFCameraResult* camera = (FFCameraResult*) ffListAdd(result);
+        FFCameraResult* camera = FF_LIST_ADD(FFCameraResult, *result);
         ffStrbufInitNWS(&camera->name, length, buffer);
         ffStrbufInit(&camera->colorspace);
         ffStrbufInit(&camera->vendor);
@@ -72,13 +72,13 @@ extern "C" const char* ffDetectCamera(FF_MAYBE_UNUSED FFlist* result) {
             continue;
         }
 
-        IMFStreamDescriptor* FF_AUTO_RELEASE_COM_OBJECT sd = NULL;
+        IMFStreamDescriptor* FF_AUTO_RELEASE_COM_OBJECT sd = nullptr;
         BOOL selected;
         if (FAILED(pd->GetStreamDescriptorByIndex(0, &selected, &sd))) {
             continue;
         }
 
-        IMFMediaTypeHandler* FF_AUTO_RELEASE_COM_OBJECT handler = NULL;
+        IMFMediaTypeHandler* FF_AUTO_RELEASE_COM_OBJECT handler = nullptr;
         if (FAILED(sd->GetMediaTypeHandler(&handler))) {
             continue;
         }
@@ -132,6 +132,9 @@ extern "C" const char* ffDetectCamera(FF_MAYBE_UNUSED FFlist* result) {
                         break;
                     case MFVideoPrimaries_ACES:
                         ffStrbufSetStatic(&camera->colorspace, "ACES");
+                        break;
+                    case (MFVideoPrimaries) 13: // MFVideoPrimaries_Display_P3
+                        ffStrbufSetStatic(&camera->colorspace, "Display P3");
                         break;
                     default:
                         break;

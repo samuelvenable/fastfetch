@@ -7,7 +7,7 @@
 #define FF_POWERADAPTER_DISPLAY_NAME "Power Adapter"
 
 bool ffPrintPowerAdapter(FFPowerAdapterOptions* options) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFPowerAdapterResult));
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectPowerAdapter(&results);
 
@@ -69,8 +69,8 @@ void ffParsePowerAdapterJsonObject(FFPowerAdapterOptions* options, yyjson_val* m
     }
 }
 
-bool ffGeneratePowerAdapterJsonResult(FF_MAYBE_UNUSED FFPowerAdapterOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFPowerAdapterResult));
+bool ffGeneratePowerAdapterJsonResult(FF_A_UNUSED FFPowerAdapterOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectPowerAdapter(&results);
 
@@ -119,10 +119,11 @@ FFModuleBaseInfo ffPowerAdapterModuleInfo = {
     .generateJsonResult = (void*) ffGeneratePowerAdapterJsonResult,
     .generateJsonConfig = (void*) ffGeneratePowerAdapterJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Power adapter watts", "watts"},
-        {"Power adapter name", "name"},
-        {"Power adapter manufacturer", "manufacturer"},
-        {"Power adapter model", "model"},
-        {"Power adapter description", "description"},
-        {"Power adapter serial number", "serial"},
-    }))};
+        { "Power adapter watts", "watts" },
+        { "Power adapter name", "name" },
+        { "Power adapter manufacturer", "manufacturer" },
+        { "Power adapter model", "model" },
+        { "Power adapter description", "description" },
+        { "Power adapter serial number", "serial" },
+    }))
+};

@@ -65,7 +65,7 @@ void ffGenerateEditorJsonConfig(FFEditorOptions* options, yyjson_mut_doc* doc, y
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateEditorJsonResult(FF_MAYBE_UNUSED FFEditorOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateEditorJsonResult(FF_A_UNUSED FFEditorOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFEditorResult result = {
         .name = ffStrbufCreate(),
         .path = ffStrbufCreate(),
@@ -104,7 +104,7 @@ void ffDestroyEditorOptions(FFEditorOptions* options) {
 
 FFModuleBaseInfo ffEditorModuleInfo = {
     .name = FF_EDITOR_MODULE_NAME,
-    .description = "Print information of the default editor ($VISUAL or $EDITOR)",
+    .description = "Print information about the default editor ($VISUAL or $EDITOR)",
     .initOptions = (void*) ffInitEditorOptions,
     .destroyOptions = (void*) ffDestroyEditorOptions,
     .parseJsonObject = (void*) ffParseEditorJsonObject,
@@ -112,9 +112,10 @@ FFModuleBaseInfo ffEditorModuleInfo = {
     .generateJsonResult = (void*) ffGenerateEditorJsonResult,
     .generateJsonConfig = (void*) ffGenerateEditorJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Type (Visual / Editor)", "type"},
-        {"Name", "name"},
-        {"Exe name of real path", "exe-name"},
-        {"Full path of real path", "path"},
-        {"Version", "version"},
-    }))};
+        { "Type (Visual / Editor)", "type" },
+        { "Name", "name" },
+        { "Exe name of real path", "exe-name" },
+        { "Full path of real path", "path" },
+        { "Version", "version" },
+    }))
+};

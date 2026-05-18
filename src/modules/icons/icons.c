@@ -60,11 +60,12 @@ void ffGenerateIconsJsonConfig(FFIconsOptions* options, yyjson_mut_doc* doc, yyj
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateIconsJsonResult(FF_MAYBE_UNUSED FFIconsOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateIconsJsonResult(FF_A_UNUSED FFIconsOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFIconsResult result = {
         .icons1 = ffStrbufCreate(),
-        .icons2 = ffStrbufCreate()};
+        .icons2 = ffStrbufCreate()
+    };
     const char* error = ffDetectIcons(&result);
 
     if (error) {
@@ -102,6 +103,7 @@ FFModuleBaseInfo ffIconsModuleInfo = {
     .generateJsonResult = (void*) ffGenerateIconsJsonResult,
     .generateJsonConfig = (void*) ffGenerateIconsJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Icons part 1", "icons1"},
-        {"Icons part 2", "icons2"},
-    }))};
+        { "Icons part 1", "icons1" },
+        { "Icons part 2", "icons2" },
+    }))
+};

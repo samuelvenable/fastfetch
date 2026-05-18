@@ -5,7 +5,7 @@ extern "C" {
 
 #include <bluetooth/LocalDevice.h>
 
-const char* ffDetectBluetooth(FF_MAYBE_UNUSED FFBluetoothOptions* options, FFlist* devices /* FFBluetoothResult */) {
+const char* ffDetectBluetooth(FF_A_UNUSED FFBluetoothOptions* options, FFlist* devices /* FFBluetoothResult */) {
     using namespace Bluetooth;
     FF_SUPPRESS_IO();
 
@@ -17,7 +17,7 @@ const char* ffDetectBluetooth(FF_MAYBE_UNUSED FFBluetoothOptions* options, FFlis
     BString devClass;
     dev->GetDeviceClass().DumpDeviceClass(devClass);
 
-    FFBluetoothResult* device = (FFBluetoothResult*) ffListAdd(devices);
+    FFBluetoothResult* device = FF_LIST_ADD(FFBluetoothResult, *devices);
     ffStrbufInitS(&device->name, dev->GetFriendlyName());
     ffStrbufInitS(&device->address, bdaddrUtils::ToString(dev->GetBluetoothAddress()).String());
     ffStrbufInitS(&device->type, devClass.String());

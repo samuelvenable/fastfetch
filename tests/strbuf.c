@@ -4,8 +4,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdnoreturn.h>
 
-__attribute__((__noreturn__)) static void testFailed(const FFstrbuf* strbuf, const char* expression, int lineNo) {
+noreturn static void testFailed(const FFstrbuf* strbuf, const char* expression, int lineNo) {
     fputs(FASTFETCH_TEXT_MODIFIER_ERROR, stderr);
     fprintf(stderr, "[%d] %s, strbuf:", lineNo, expression);
     ffStrbufWriteTo(strbuf, stderr);
@@ -151,7 +152,7 @@ int main(void) {
 
     // removeStrings
 
-    ffStrbufRemoveStrings(&strbuf, 3, (const char*[]) {"23", "45", "9"});
+    ffStrbufRemoveStrings(&strbuf, 3, (const char*[]) { "23", "45", "9" });
 
     VERIFY(strbuf.length == 2);
     VERIFY(strcmp(strbuf.chars, "16") == 0);

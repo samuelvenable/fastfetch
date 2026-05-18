@@ -5,7 +5,7 @@
 #include "modules/dns/dns.h"
 
 bool ffPrintDNS(FFDNSOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFstrbuf));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectDNS(options, &result);
 
@@ -67,9 +67,9 @@ void ffParseDNSJsonObject(FFDNSOptions* options, yyjson_val* module) {
         if (unsafe_yyjson_equals_str(key, "showType")) {
             int value;
             const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                       {"both", FF_DNS_TYPE_BOTH},
-                                                                       {"ipv4", FF_DNS_TYPE_IPV4_BIT},
-                                                                       {"ipv6", FF_DNS_TYPE_IPV6_BIT},
+                                                                       { "both", FF_DNS_TYPE_BOTH },
+                                                                       { "ipv4", FF_DNS_TYPE_IPV4_BIT },
+                                                                       { "ipv6", FF_DNS_TYPE_IPV6_BIT },
                                                                        {},
                                                                    });
             if (error) {
@@ -101,7 +101,7 @@ void ffGenerateDNSJsonConfig(FFDNSOptions* options, yyjson_mut_doc* doc, yyjson_
 }
 
 bool ffGenerateDNSJsonResult(FFDNSOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFstrbuf));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectDNS(options, &result);
 
@@ -143,5 +143,6 @@ FFModuleBaseInfo ffDNSModuleInfo = {
     .generateJsonResult = (void*) ffGenerateDNSJsonResult,
     .generateJsonConfig = (void*) ffGenerateDNSJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"DNS result", "result"},
-    }))};
+        { "DNS result", "result" },
+    }))
+};

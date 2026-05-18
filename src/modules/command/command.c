@@ -26,7 +26,7 @@ bool ffPrintCommand(FFCommandOptions* options) {
                 ffPrintLogoAndKey(FF_COMMAND_MODULE_NAME, ++index, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT);
                 puts(line);
             } else {
-                FF_PRINT_FORMAT_CHECKED(FF_COMMAND_MODULE_NAME, ++index, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) {FF_ARG(line, "result")}));
+                FF_PRINT_FORMAT_CHECKED(FF_COMMAND_MODULE_NAME, ++index, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) { FF_ARG(line, "result") }));
             }
         }
     } else {
@@ -34,7 +34,7 @@ bool ffPrintCommand(FFCommandOptions* options) {
             ffPrintLogoAndKey(FF_COMMAND_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT);
             ffStrbufPutTo(&result, stdout);
         } else {
-            FF_PRINT_FORMAT_CHECKED(FF_COMMAND_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) {FF_ARG(result, "result")}));
+            FF_PRINT_FORMAT_CHECKED(FF_COMMAND_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) { FF_ARG(result, "result") }));
         }
     }
 
@@ -94,7 +94,7 @@ void ffGenerateCommandJsonConfig(FFCommandOptions* options, yyjson_mut_doc* doc,
     yyjson_mut_obj_add_bool(doc, module, "splitLines", options->splitLines);
 }
 
-bool ffGenerateCommandJsonResult(FF_MAYBE_UNUSED FFCommandOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateCommandJsonResult(FF_A_UNUSED FFCommandOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FF_STRBUF_AUTO_DESTROY result = ffStrbufCreate();
     const char* error = ffDetectCommand(options, &result);
 
@@ -162,5 +162,6 @@ FFModuleBaseInfo ffCommandModuleInfo = {
     .generateJsonResult = (void*) ffGenerateCommandJsonResult,
     .generateJsonConfig = (void*) ffGenerateCommandJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Command result", "result"},
-    }))};
+        { "Command result", "result" },
+    }))
+};

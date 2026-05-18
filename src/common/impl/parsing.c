@@ -1,11 +1,9 @@
 #include "fastfetch.h"
 #include "common/parsing.h"
 
-#include <ctype.h>
-
 #ifdef _WIN32
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wformat"
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat"
 #endif
 
 void ffParseSemver(FFstrbuf* buffer, const FFstrbuf* major, const FFstrbuf* minor, const FFstrbuf* patch) {
@@ -101,6 +99,16 @@ void ffParseGTK(FFstrbuf* buffer, const FFstrbuf* gtk2, const FFstrbuf* gtk3, co
             ffStrbufAppend(buffer, gtk3);
             ffStrbufAppendS(buffer, " [GTK3]");
         }
+    } else if (gtk2->length > 0 && gtk4->length > 0) {
+        if (ffStrbufIgnCaseEqual(gtk2, gtk4)) {
+            ffStrbufAppend(buffer, gtk4);
+            ffStrbufAppendS(buffer, " [GTK2/4]");
+        } else {
+            ffStrbufAppend(buffer, gtk2);
+            ffStrbufAppendS(buffer, " [GTK2], ");
+            ffStrbufAppend(buffer, gtk4);
+            ffStrbufAppendS(buffer, " [GTK4]");
+        }
     } else if (gtk3->length > 0 && gtk4->length > 0) {
         if (ffStrbufIgnCaseEqual(gtk3, gtk4)) {
             ffStrbufAppend(buffer, gtk4);
@@ -124,5 +132,5 @@ void ffParseGTK(FFstrbuf* buffer, const FFstrbuf* gtk2, const FFstrbuf* gtk3, co
 }
 
 #ifdef _WIN32
-#    pragma GCC diagnostic pop
+    #pragma GCC diagnostic pop
 #endif

@@ -1,10 +1,10 @@
 #pragma once
 
 #ifdef FF_HAVE_DBUS
-#    include <dbus/dbus.h>
+    #include <dbus/dbus.h>
 
-#    include "common/FFstrbuf.h"
-#    include "common/library.h"
+    #include "common/FFstrbuf.h"
+    #include "common/library.h"
 
 typedef struct FFDBusLibrary {
     FF_LIBRARY_SYMBOL(dbus_bus_get)
@@ -29,18 +29,18 @@ typedef struct FFDBusData {
 const char* ffDBusLoadData(DBusBusType busType, FFDBusData* data); // Returns an error message or NULL on success
 bool ffDBusGetString(FFDBusData* dbus, DBusMessageIter* iter, FFstrbuf* result);
 bool ffDBusGetBool(FFDBusData* dbus, DBusMessageIter* iter, bool* result);
-bool ffDBusGetUint(FFDBusData* dbus, DBusMessageIter* iter, uint32_t* result);
+bool ffDBusGetUint(FFDBusData* dbus, DBusMessageIter* iter, uint64_t* result);
 DBusMessage* ffDBusGetMethodReply(FFDBusData* dbus, const char* busName, const char* objectPath, const char* interface, const char* method, const char* arg1, const char* arg2);
 DBusMessage* ffDBusGetProperty(FFDBusData* dbus, const char* busName, const char* objectPath, const char* interface, const char* property);
 bool ffDBusGetPropertyString(FFDBusData* dbus, const char* busName, const char* objectPath, const char* interface, const char* property, FFstrbuf* result);
-bool ffDBusGetInt(FFDBusData* dbus, DBusMessageIter* iter, int32_t* result);
-bool ffDBusGetPropertyUint(FFDBusData* dbus, const char* busName, const char* objectPath, const char* interface, const char* property, uint32_t* result);
+bool ffDBusGetInt(FFDBusData* dbus, DBusMessageIter* iter, int64_t* result);
+bool ffDBusGetPropertyUint(FFDBusData* dbus, const char* busName, const char* objectPath, const char* interface, const char* property, uint64_t* result);
 void ffDBusDestroyData(FFDBusData* data);
 
 static inline DBusMessage* ffDBusGetAllProperties(FFDBusData* dbus, const char* busName, const char* objectPath, const char* interface) {
     return ffDBusGetMethodReply(dbus, busName, objectPath, "org.freedesktop.DBus.Properties", "GetAll", interface, NULL);
 }
 
-#    define FF_DBUS_AUTO_DESTROY_DATA __attribute__((__cleanup__(ffDBusDestroyData)))
+    #define FF_DBUS_AUTO_DESTROY_DATA FF_A_CLEANUP(ffDBusDestroyData)
 
 #endif // FF_HAVE_DBUS

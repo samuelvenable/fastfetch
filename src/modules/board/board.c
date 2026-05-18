@@ -64,7 +64,7 @@ void ffGenerateBoardJsonConfig(FFBoardOptions* options, yyjson_mut_doc* doc, yyj
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateBoardJsonResult(FF_MAYBE_UNUSED FFBoardOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateBoardJsonResult(FF_A_UNUSED FFBoardOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFBoardResult board;
     ffStrbufInit(&board.name);
@@ -109,7 +109,7 @@ void ffDestroyBoardOptions(FFBoardOptions* options) {
 
 FFModuleBaseInfo ffBoardModuleInfo = {
     .name = FF_BOARD_MODULE_NAME,
-    .description = "Print motherboard name and other info",
+    .description = "Print motherboard name and other information",
     .initOptions = (void*) ffInitBoardOptions,
     .destroyOptions = (void*) ffDestroyBoardOptions,
     .parseJsonObject = (void*) ffParseBoardJsonObject,
@@ -117,8 +117,9 @@ FFModuleBaseInfo ffBoardModuleInfo = {
     .generateJsonResult = (void*) ffGenerateBoardJsonResult,
     .generateJsonConfig = (void*) ffGenerateBoardJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Board name", "name"},
-        {"Board vendor", "vendor"},
-        {"Board version", "version"},
-        {"Board serial number", "serial"},
-    }))};
+        { "Board name", "name" },
+        { "Board vendor", "vendor" },
+        { "Board version", "version" },
+        { "Board serial number", "serial" },
+    }))
+};

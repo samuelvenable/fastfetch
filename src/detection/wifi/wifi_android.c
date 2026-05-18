@@ -16,11 +16,11 @@ static inline void wrapYyjsonFree(yyjson_doc** doc) {
 const char* ffDetectWifi(FFlist* result) {
     FF_STRBUF_AUTO_DESTROY buffer = ffStrbufCreate();
 
-    if (ffProcessAppendStdOut(&buffer, (char* const[]) {FF_TERMUX_API_PATH, FF_TERMUX_API_PARAM, NULL})) {
+    if (ffProcessAppendStdOut(&buffer, (char* const[]) { FF_TERMUX_API_PATH, FF_TERMUX_API_PARAM, NULL })) {
         return "Starting `" FF_TERMUX_API_PATH " " FF_TERMUX_API_PARAM "` failed";
     }
 
-    yyjson_doc* __attribute__((__cleanup__(wrapYyjsonFree))) doc = yyjson_read_opts(buffer.chars, buffer.length, 0, NULL, NULL);
+    yyjson_doc* FF_A_CLEANUP(wrapYyjsonFree) doc = yyjson_read_opts(buffer.chars, buffer.length, 0, NULL, NULL);
     if (!doc) {
         return "Failed to parse wifi connection info";
     }
@@ -30,7 +30,7 @@ const char* ffDetectWifi(FFlist* result) {
         return "Wifi info result is not a JSON object";
     }
 
-    FFWifiResult* item = (FFWifiResult*) ffListAdd(result);
+    FFWifiResult* item = FF_LIST_ADD(FFWifiResult, *result);
     ffStrbufInit(&item->inf.description);
     ffStrbufInit(&item->inf.status);
     ffStrbufInit(&item->conn.status);

@@ -10,7 +10,7 @@ static inline void kstatFreeWrap(kstat_ctl_t** pkc) {
 }
 
 const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
-    __attribute__((__cleanup__(kstatFreeWrap))) kstat_ctl_t* kc = kstat_open();
+    FF_A_CLEANUP(kstatFreeWrap) kstat_ctl_t* kc = kstat_open();
     if (!kc) {
         return "kstat_open() failed";
     }
@@ -29,7 +29,7 @@ const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
             continue;
         }
 
-        FFDiskIOResult* device = (FFDiskIOResult*) ffListAdd(result);
+        FFDiskIOResult* device = FF_LIST_ADD(FFDiskIOResult, *result);
         ffStrbufInit(&device->devPath); // unlike other platforms, `/dev/ks_name` is not available
         ffStrbufInitS(&device->name, ks->ks_name);
         device->bytesRead = kio.nread;

@@ -2,12 +2,12 @@
 
 #if defined(FF_HAVE_ELF) || defined(__sun) || (defined(__FreeBSD__) && !defined(__DragonFly__)) || defined(__OpenBSD__) || defined(__NetBSD__)
 
-#    include "common/io.h"
-#    include "common/library.h"
-#    include "common/stringUtils.h"
+    #include "common/io.h"
+    #include "common/library.h"
+    #include "common/stringUtils.h"
 
-#    include <libelf.h> // #1254
-#    include <fcntl.h>
+    #include <libelf.h> // #1254
+    #include <fcntl.h>
 
 /**
  * Structure to hold dynamically loaded libelf function pointers
@@ -112,8 +112,9 @@ const char* ffBinaryExtractStrings(const char* elfFile, bool (*cb)(const char* s
             if (*p == '\0') {
                 continue;
             }
-            uint32_t len = (uint32_t) strlen(p);
+            uint32_t len = (uint32_t) strnlen(p, data->d_size - off);
             if (len < minLength) {
+                off += len;
                 continue;
             }
             // Only process printable ASCII characters

@@ -4,8 +4,8 @@
 #include "logo/logo.h"
 #include "modules/modules.h"
 
-#define MODULE_OPTION(name)                                                       \
-    __attribute__((cleanup(ffDestroy##name##Options))) FF##name##Options options; \
+#define MODULE_OPTION(name)                                           \
+    FF_A_CLEANUP(ffDestroy##name##Options) FF##name##Options options; \
     ffInit##name##Options(&options);
 
 // A dirty replicate of neofetch; demonstration only.

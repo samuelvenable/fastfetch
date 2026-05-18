@@ -247,15 +247,18 @@ void ffStrbufSetNS(FFstrbuf* strbuf, uint32_t length, const char* value) {
 
     assert(value != NULL);
 
-    if (strbuf->allocated < length + 1) {
+    if (strbuf->allocated <= length) {
+        char* newBuf = malloc(sizeof(char) * (length + 1));
+        memcpy(newBuf, value, length);
         if (strbuf->allocated > 0) {
             free(strbuf->chars);
         }
+        strbuf->chars = newBuf;
         strbuf->allocated = length + 1;
-        strbuf->chars = malloc(sizeof(char) * strbuf->allocated);
+    } else {
+        memmove(strbuf->chars, value, length);
     }
 
-    memcpy(strbuf->chars, value, length);
     strbuf->length = length;
     strbuf->chars[length] = '\0';
 }
@@ -787,9 +790,10 @@ bool ffStrbufMatchSeparatedNS(const FFstrbuf* strbuf, uint32_t compLength, const
     }
 
     for (const char* p = comp; p < comp + compLength;) {
-        const char* colon = memchr(p, separator, compLength);
+        const char* colon = memchr(p, separator, (size_t) (comp + compLength - p));
         if (colon == NULL) {
-            return strcmp(strbuf->chars, p) == 0;
+            uint32_t remainingLen = (uint32_t) (comp + compLength - p);
+            return strbuf->length == remainingLen && memcmp(strbuf->chars, p, remainingLen) == 0;
         }
 
         uint32_t substrLength = (uint32_t) (colon - p);
@@ -814,9 +818,10 @@ bool ffStrbufMatchSeparatedIgnCaseNS(const FFstrbuf* strbuf, uint32_t compLength
     }
 
     for (const char* p = comp; p < comp + compLength;) {
-        const char* colon = memchr(p, separator, compLength);
+        const char* colon = memchr(p, separator, (size_t) (comp + compLength - p));
         if (colon == NULL) {
-            return strcasecmp(strbuf->chars, p) == 0;
+            uint32_t remainingLen = (uint32_t) (comp + compLength - p);
+            return strbuf->length == remainingLen && strncasecmp(strbuf->chars, p, remainingLen) == 0;
         }
 
         uint32_t substrLength = (uint32_t) (colon - p);
@@ -835,13 +840,13 @@ int ffStrbufAppendUtf32CodePoint(FFstrbuf* strbuf, uint32_t codepoint) {
         ffStrbufAppendC(strbuf, (char) codepoint);
         return 1;
     } else if (codepoint <= 0x7FF) {
-        ffStrbufAppendNS(strbuf, 2, (char[]) {(char) (0xC0 | (codepoint >> 6)), (char) (0x80 | (codepoint & 0x3F))});
+        ffStrbufAppendNS(strbuf, 2, (char[]) { (char) (0xC0 | (codepoint >> 6)), (char) (0x80 | (codepoint & 0x3F)) });
         return 2;
     } else if (codepoint <= 0xFFFF) {
-        ffStrbufAppendNS(strbuf, 3, (char[]) {(char) (0xE0 | (codepoint >> 12)), (char) (0x80 | ((codepoint >> 6) & 0x3F)), (char) (0x80 | (codepoint & 0x3F))});
+        ffStrbufAppendNS(strbuf, 3, (char[]) { (char) (0xE0 | (codepoint >> 12)), (char) (0x80 | ((codepoint >> 6) & 0x3F)), (char) (0x80 | (codepoint & 0x3F)) });
         return 3;
     } else if (codepoint <= 0x10FFFF) {
-        ffStrbufAppendNS(strbuf, 4, (char[]) {(char) (0xF0 | (codepoint >> 18)), (char) (0x80 | ((codepoint >> 12) & 0x3F)), (char) (0x80 | ((codepoint >> 6) & 0x3F)), (char) (0x80 | (codepoint & 0x3F))});
+        ffStrbufAppendNS(strbuf, 4, (char[]) { (char) (0xF0 | (codepoint >> 18)), (char) (0x80 | ((codepoint >> 12) & 0x3F)), (char) (0x80 | ((codepoint >> 6) & 0x3F)), (char) (0x80 | (codepoint & 0x3F)) });
         return 4;
     }
 

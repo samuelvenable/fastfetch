@@ -52,9 +52,9 @@ void ffParseOpenGLJsonObject(FFOpenGLOptions* options, yyjson_val* module) {
         if (unsafe_yyjson_equals_str(key, "library")) {
             int value;
             const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                       {"auto", FF_OPENGL_LIBRARY_AUTO},
-                                                                       {"egl", FF_OPENGL_LIBRARY_EGL},
-                                                                       {"glx", FF_OPENGL_LIBRARY_GLX},
+                                                                       { "auto", FF_OPENGL_LIBRARY_AUTO },
+                                                                       { "egl", FF_OPENGL_LIBRARY_EGL },
+                                                                       { "glx", FF_OPENGL_LIBRARY_GLX },
                                                                        {},
                                                                    });
             if (error) {
@@ -85,7 +85,7 @@ void ffGenerateOpenGLJsonConfig(FFOpenGLOptions* options, yyjson_mut_doc* doc, y
     }
 }
 
-bool ffGenerateOpenGLJsonResult(FF_MAYBE_UNUSED FFOpenGLOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateOpenGLJsonResult(FF_A_UNUSED FFOpenGLOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFOpenGLResult result;
     ffStrbufInit(&result.version);
@@ -128,7 +128,7 @@ void ffDestroyOpenGLOptions(FFOpenGLOptions* options) {
 
 FFModuleBaseInfo ffOpenGLModuleInfo = {
     .name = FF_OPENGL_MODULE_NAME,
-    .description = "Print highest OpenGL version supported by the GPU",
+    .description = "Print the highest OpenGL version supported by the GPU",
     .initOptions = (void*) ffInitOpenGLOptions,
     .destroyOptions = (void*) ffDestroyOpenGLOptions,
     .parseJsonObject = (void*) ffParseOpenGLJsonObject,
@@ -136,9 +136,10 @@ FFModuleBaseInfo ffOpenGLModuleInfo = {
     .generateJsonResult = (void*) ffGenerateOpenGLJsonResult,
     .generateJsonConfig = (void*) ffGenerateOpenGLJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"OpenGL version", "version"},
-        {"OpenGL renderer", "renderer"},
-        {"OpenGL vendor", "vendor"},
-        {"OpenGL shading language version", "slv"},
-        {"OpenGL library used", "library"},
-    }))};
+        { "OpenGL version", "version" },
+        { "OpenGL renderer", "renderer" },
+        { "OpenGL vendor", "vendor" },
+        { "OpenGL shading language version", "slv" },
+        { "OpenGL library used", "library" },
+    }))
+};

@@ -66,7 +66,7 @@ void ffGenerateCursorJsonConfig(FFCursorOptions* options, yyjson_mut_doc* doc, y
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateCursorJsonResult(FF_MAYBE_UNUSED FFCursorOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateCursorJsonResult(FF_A_UNUSED FFCursorOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFCursorResult result;
     ffStrbufInit(&result.error);
@@ -109,7 +109,7 @@ FFModuleBaseInfo ffCursorModuleInfo = {
     .generateJsonResult = (void*) ffGenerateCursorJsonResult,
     .generateJsonConfig = (void*) ffGenerateCursorJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Cursor theme", "theme"},
-        {"Cursor size", "size"},
+        { "Cursor theme", "theme" },
+        { "Cursor size", "size" },
     })),
 };

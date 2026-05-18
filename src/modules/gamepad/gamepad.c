@@ -49,7 +49,7 @@ static void printDevice(FFGamepadOptions* options, const FFGamepadDevice* device
 }
 
 bool ffPrintGamepad(FFGamepadOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFGamepadDevice));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectGamepad(&result);
 
@@ -63,7 +63,7 @@ bool ffPrintGamepad(FFGamepadOptions* options) {
         return false;
     }
 
-    FF_LIST_AUTO_DESTROY filtered = ffListCreate(sizeof(FFGamepadDevice*));
+    FF_LIST_AUTO_DESTROY filtered = ffListCreate();
     FF_LIST_FOR_EACH (FFGamepadDevice, device, result) {
         bool ignored = false;
         FF_LIST_FOR_EACH (FFstrbuf, ignore, options->ignores) {
@@ -73,7 +73,7 @@ bool ffPrintGamepad(FFGamepadOptions* options) {
             }
         }
         if (!ignored) {
-            FFGamepadDevice** ptr = ffListAdd(&filtered);
+            FFGamepadDevice** ptr = FF_LIST_ADD(FFGamepadDevice*, filtered);
             *ptr = device;
         }
     }
@@ -111,7 +111,7 @@ void ffParseGamepadJsonObject(FFGamepadOptions* options, yyjson_val* module) {
             size_t eidx, emax;
             yyjson_arr_foreach (val, eidx, emax, elem) {
                 if (yyjson_is_str(elem)) {
-                    FFstrbuf* strbuf = ffListAdd(&options->ignores);
+                    FFstrbuf* strbuf = FF_LIST_ADD(FFstrbuf, options->ignores);
                     ffStrbufInitJsonVal(strbuf, elem);
                 }
             }
@@ -138,8 +138,8 @@ void ffGenerateGamepadJsonConfig(FFGamepadOptions* options, yyjson_mut_doc* doc,
     ffPercentGenerateJsonConfig(doc, module, options->percent);
 }
 
-bool ffGenerateGamepadJsonResult(FF_MAYBE_UNUSED FFGamepadOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFGamepadDevice));
+bool ffGenerateGamepadJsonResult(FF_A_UNUSED FFGamepadOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectGamepad(&result);
 
@@ -175,8 +175,8 @@ bool ffGenerateGamepadJsonResult(FF_MAYBE_UNUSED FFGamepadOptions* options, yyjs
 void ffInitGamepadOptions(FFGamepadOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "󰺵");
 
-    ffListInit(&options->ignores, sizeof(FFstrbuf));
-    options->percent = (FFPercentageModuleConfig) {50, 20, 0};
+    ffListInit(&options->ignores);
+    options->percent = (FFPercentageModuleConfig) { 50, 20, 0 };
 }
 
 void ffDestroyGamepadOptions(FFGamepadOptions* options) {
@@ -190,7 +190,7 @@ void ffDestroyGamepadOptions(FFGamepadOptions* options) {
 
 FFModuleBaseInfo ffGamepadModuleInfo = {
     .name = FF_GAMEPAD_MODULE_NAME,
-    .description = "List (connected) gamepads",
+    .description = "List connected gamepads",
     .initOptions = (void*) ffInitGamepadOptions,
     .destroyOptions = (void*) ffDestroyGamepadOptions,
     .parseJsonObject = (void*) ffParseGamepadJsonObject,
@@ -198,8 +198,9 @@ FFModuleBaseInfo ffGamepadModuleInfo = {
     .generateJsonResult = (void*) ffGenerateGamepadJsonResult,
     .generateJsonConfig = (void*) ffGenerateGamepadJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Name", "name"},
-        {"Serial number", "serial"},
-        {"Battery percentage num", "battery-percentage"},
-        {"Battery percentage bar", "battery-percentage-bar"},
-    }))};
+        { "Name", "name" },
+        { "Serial number", "serial" },
+        { "Battery percentage num", "battery-percentage" },
+        { "Battery percentage bar", "battery-percentage-bar" },
+    }))
+};

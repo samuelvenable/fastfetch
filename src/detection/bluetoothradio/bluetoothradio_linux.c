@@ -2,8 +2,8 @@
 #include "common/stringUtils.h"
 
 #ifdef FF_HAVE_DBUS
-#    include "common/dbus.h"
-#    include "common/io.h"
+    #include "common/dbus.h"
+    #include "common/io.h"
 
 /* Example dbus reply:
 array [
@@ -56,12 +56,15 @@ static const char* detectBluetoothProperty(FFBluetoothRadioResult* device, FFDBu
     } else if (ffStrEquals(deviceProperty, "Alias")) {
         ffDBusGetString(dbus, &dictIter, &device->name);
     } else if (ffStrEquals(deviceProperty, "Manufacturer")) {
-        uint32_t vendorId;
+        uint64_t vendorId;
         if (ffDBusGetUint(dbus, &dictIter, &vendorId)) {
-            ffStrbufSetStatic(&device->vendor, ffBluetoothRadioGetVendor(vendorId));
+            ffStrbufSetStatic(&device->vendor, ffBluetoothRadioGetVendor((uint32_t) vendorId));
         }
     } else if (ffStrEquals(deviceProperty, "Version")) {
-        ffDBusGetUint(dbus, &dictIter, (uint32_t*) &device->lmpVersion);
+        uint64_t version;
+        if (ffDBusGetUint(dbus, &dictIter, &version)) {
+            device->lmpVersion = (int32_t) version;
+        }
     } else if (ffStrEquals(deviceProperty, "Powered")) {
         ffDBusGetBool(dbus, &dictIter, &device->enabled);
     } else if (ffStrEquals(deviceProperty, "Discoverable")) {
@@ -126,7 +129,7 @@ static const char* detectBluetooth(FFlist* devices) {
             continue;
         }
 
-        FFBluetoothRadioResult* device = ffListAdd(devices);
+        FFBluetoothRadioResult* device = FF_LIST_ADD(FFBluetoothRadioResult, *devices);
         ffStrbufInit(&device->name);
         ffStrbufInit(&device->address);
         ffStrbufInitStatic(&device->vendor, "Unknown");

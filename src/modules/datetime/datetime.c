@@ -35,6 +35,7 @@ typedef struct FFDateTimeResult {
     char secondPretty[FASTFETCH_STRBUF_DEFAULT_ALLOC];   // 37
     char offsetFromUtc[FASTFETCH_STRBUF_DEFAULT_ALLOC];
     char timezoneName[FASTFETCH_STRBUF_DEFAULT_ALLOC];
+    char amPm[FASTFETCH_STRBUF_DEFAULT_ALLOC];
 } FFDateTimeResult;
 
 static void printDateTimeFormat(struct tm* tm, const FFModuleArgs* moduleArgs) {
@@ -63,32 +64,39 @@ static void printDateTimeFormat(struct tm* tm, const FFModuleArgs* moduleArgs) {
     strftime(result.secondPretty, sizeof(result.secondPretty), "%S", tm);
     strftime(result.offsetFromUtc, sizeof(result.offsetFromUtc), "%z", tm);
     strftime(result.timezoneName, sizeof(result.timezoneName), "%Z", tm);
+    strftime(result.amPm, sizeof(result.amPm), "%p", tm);
 
-    FF_PRINT_FORMAT_CHECKED(FF_DATETIME_DISPLAY_NAME, 0, moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) {
-                                                                                                FF_ARG(result.year, "year"),                       // 1
-                                                                                                FF_ARG(result.yearShort, "year-short"),            // 2
-                                                                                                FF_ARG(result.month, "month"),                     // 3
-                                                                                                FF_ARG(result.monthPretty, "month-pretty"),        // 4
-                                                                                                FF_ARG(result.monthName, "month-name"),            // 5
-                                                                                                FF_ARG(result.monthNameShort, "month-name-short"), // 6
-                                                                                                FF_ARG(result.week, "week"),                       // 7
-                                                                                                FF_ARG(result.weekday, "weekday"),                 // 8
-                                                                                                FF_ARG(result.weekdayShort, "weekday-short"),      // 9
-                                                                                                FF_ARG(result.dayInYear, "day-in-year"),           // 10
-                                                                                                FF_ARG(result.dayInMonth, "day-in-month"),         // 11
-                                                                                                FF_ARG(result.dayInWeek, "day-in-week"),           // 12
-                                                                                                FF_ARG(result.hour, "hour"),                       // 13
-                                                                                                FF_ARG(result.hourPretty, "hour-pretty"),          // 14
-                                                                                                FF_ARG(result.hour12, "hour-12"),                  // 15
-                                                                                                FF_ARG(result.hour12Pretty, "hour-12-pretty"),     // 16
-                                                                                                FF_ARG(result.minute, "minute"),                   // 17
-                                                                                                FF_ARG(result.minutePretty, "minute-pretty"),      // 18
-                                                                                                FF_ARG(result.second, "second"),                   // 19
-                                                                                                FF_ARG(result.secondPretty, "second-pretty"),      // 20
-                                                                                                FF_ARG(result.offsetFromUtc, "offset-from-utc"),   // 21
-                                                                                                FF_ARG(result.timezoneName, "timezone-name"),      // 22
-                                                                                                FF_ARG(result.dayPretty, "day-pretty"),            // 23
-                                                                                            }));
+    FF_PRINT_FORMAT_CHECKED(
+        FF_DATETIME_DISPLAY_NAME,
+        0,
+        moduleArgs,
+        FF_PRINT_TYPE_DEFAULT,
+        ((FFformatarg[]){
+            FF_ARG(result.year, "year"),                       // 1
+            FF_ARG(result.yearShort, "year-short"),            // 2
+            FF_ARG(result.month, "month"),                     // 3
+            FF_ARG(result.monthPretty, "month-pretty"),        // 4
+            FF_ARG(result.monthName, "month-name"),            // 5
+            FF_ARG(result.monthNameShort, "month-name-short"), // 6
+            FF_ARG(result.week, "week"),                       // 7
+            FF_ARG(result.weekday, "weekday"),                 // 8
+            FF_ARG(result.weekdayShort, "weekday-short"),      // 9
+            FF_ARG(result.dayInYear, "day-in-year"),           // 10
+            FF_ARG(result.dayInMonth, "day-in-month"),         // 11
+            FF_ARG(result.dayInWeek, "day-in-week"),           // 12
+            FF_ARG(result.hour, "hour"),                       // 13
+            FF_ARG(result.hourPretty, "hour-pretty"),          // 14
+            FF_ARG(result.hour12, "hour-12"),                  // 15
+            FF_ARG(result.hour12Pretty, "hour-12-pretty"),     // 16
+            FF_ARG(result.minute, "minute"),                   // 17
+            FF_ARG(result.minutePretty, "minute-pretty"),      // 18
+            FF_ARG(result.second, "second"),                   // 19
+            FF_ARG(result.secondPretty, "second-pretty"),      // 20
+            FF_ARG(result.offsetFromUtc, "offset-from-utc"),   // 21
+            FF_ARG(result.timezoneName, "timezone-name"),      // 22
+            FF_ARG(result.dayPretty, "day-pretty"),            // 23
+            FF_ARG(result.amPm, "am-pm"),                      // 24
+        }));
 }
 
 bool ffPrintDateTime(FFDateTimeOptions* options) {
@@ -130,7 +138,7 @@ void ffGenerateDateTimeJsonConfig(FFDateTimeOptions* options, yyjson_mut_doc* do
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateDateTimeJsonResult(FF_MAYBE_UNUSED FFDateTimeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateDateTimeJsonResult(FF_A_UNUSED FFDateTimeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     yyjson_mut_obj_add_strcpy(doc, module, "result", ffTimeToFullStr(ffTimeGetNow()));
     return true;
 }
@@ -145,35 +153,37 @@ void ffDestroyDateTimeOptions(FFDateTimeOptions* options) {
 
 FFModuleBaseInfo ffDateTimeModuleInfo = {
     .name = FF_DATETIME_MODULE_NAME,
-    .description = "Print current date and time",
+    .description = "Print the current date and time",
     .initOptions = (void*) ffInitDateTimeOptions,
     .destroyOptions = (void*) ffDestroyDateTimeOptions,
     .parseJsonObject = (void*) ffParseDateTimeJsonObject,
     .printModule = (void*) ffPrintDateTime,
     .generateJsonResult = (void*) ffGenerateDateTimeJsonResult,
     .generateJsonConfig = (void*) ffGenerateDateTimeJsonConfig,
-    .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Year", "year"},
-        {"Last two digits of year", "year-short"},
-        {"Month", "month"},
-        {"Month with leading zero", "month-pretty"},
-        {"Month name", "month-name"},
-        {"Month name short", "month-name-short"},
-        {"Week number on year", "week"},
-        {"Weekday", "weekday"},
-        {"Weekday short", "weekday-short"},
-        {"Day in year", "day-in-year"},
-        {"Day in month", "day-in-month"},
-        {"Day in week", "day-in-week"},
-        {"Hour", "hour"},
-        {"Hour with leading zero", "hour-pretty"},
-        {"Hour 12h format", "hour-12"},
-        {"Hour 12h format with leading zero", "hour-12-pretty"},
-        {"Minute", "minute"},
-        {"Minute with leading zero", "minute-pretty"},
-        {"Second", "second"},
-        {"Second with leading zero", "second-pretty"},
-        {"Offset from UTC in the ISO 8601 format", "offset-from-utc"},
-        {"Locale-dependent timezone name or abbreviation", "timezone-name"},
-        {"Day in month with leading zero", "day-pretty"},
-    }))};
+    .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]){
+        { "Year", "year" },
+        { "Last two digits of year", "year-short" },
+        { "Month", "month" },
+        { "Month with leading zero", "month-pretty" },
+        { "Month name", "month-name" },
+        { "Month name short", "month-name-short" },
+        { "Week number on year", "week" },
+        { "Weekday", "weekday" },
+        { "Weekday short", "weekday-short" },
+        { "Day in year", "day-in-year" },
+        { "Day in month", "day-in-month" },
+        { "Day in week", "day-in-week" },
+        { "Hour", "hour" },
+        { "Hour with leading zero", "hour-pretty" },
+        { "Hour 12h format", "hour-12" },
+        { "Hour 12h format with leading zero", "hour-12-pretty" },
+        { "Minute", "minute" },
+        { "Minute with leading zero", "minute-pretty" },
+        { "Second", "second" },
+        { "Second with leading zero", "second-pretty" },
+        { "Offset from UTC in the ISO 8601 format", "offset-from-utc" },
+        { "Locale-dependent timezone name or abbreviation", "timezone-name" },
+        { "Day in month with leading zero", "day-pretty" },
+        { "AM or PM", "am-pm" },
+    }))
+};

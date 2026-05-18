@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #ifdef _WIN32
-#    include "common/windows/getline.h"
+    #include "common/windows/getline.h"
 #endif
 
 bool ffParsePropLinePointer(const char** line, const char* start, FFstrbuf* buffer) {
@@ -55,7 +55,7 @@ bool ffParsePropLinePointer(const char** line, const char* start, FFstrbuf* buff
         ++(*line);
     }
 
-    // Allow faster parsing of quotet values
+    // Allow faster parsing of quoted values
     if (**line == '"' || **line == '\'') {
         valueEnd = **line;
         ++(*line);

@@ -13,31 +13,31 @@
 
 static bool parseLsbRelease(const char* fileName, FFOSResult* result) {
     return ffParsePropFileValues(fileName, 4, (FFpropquery[]) {
-                                                  {"DISTRIB_ID =", &result->id},
-                                                  {"DISTRIB_DESCRIPTION =", &result->prettyName},
-                                                  {"DISTRIB_RELEASE =", &result->version},
-                                                  {"DISTRIB_CODENAME =", &result->codename},
+                                                  { "DISTRIB_ID =", &result->id },
+                                                  { "DISTRIB_DESCRIPTION =", &result->prettyName },
+                                                  { "DISTRIB_RELEASE =", &result->version },
+                                                  { "DISTRIB_CODENAME =", &result->codename },
                                               });
 }
 
 static bool parseOsRelease(const char* fileName, FFOSResult* result) {
     return ffParsePropFileValues(fileName, 11, (FFpropquery[]) {
-                                                   {"PRETTY_NAME =", &result->prettyName},
-                                                   {"NAME =", &result->name},
-                                                   {"ID =", &result->id},
-                                                   {"ID_LIKE =", &result->idLike},
-                                                   {"VARIANT =", &result->variant},
-                                                   {"VARIANT_ID =", &result->variantID},
-                                                   {"VERSION =", &result->version},
-                                                   {"VERSION_ID =", &result->versionID},
-                                                   {"VERSION_CODENAME =", &result->codename},
-                                                   {"CODENAME =", &result->codename},
-                                                   {"BUILD_ID =", &result->buildID},
+                                                   { "PRETTY_NAME =", &result->prettyName },
+                                                   { "NAME =", &result->name },
+                                                   { "ID =", &result->id },
+                                                   { "ID_LIKE =", &result->idLike },
+                                                   { "VARIANT =", &result->variant },
+                                                   { "VARIANT_ID =", &result->variantID },
+                                                   { "VERSION =", &result->version },
+                                                   { "VERSION_ID =", &result->versionID },
+                                                   { "VERSION_CODENAME =", &result->codename },
+                                                   { "CODENAME =", &result->codename },
+                                                   { "BUILD_ID =", &result->buildID },
                                                });
 }
 
 // Common logic for detecting Armbian image version
-FF_MAYBE_UNUSED static bool detectArmbianVersion(FFOSResult* result) {
+FF_A_UNUSED static bool detectArmbianVersion(FFOSResult* result) {
     // Possible values `PRETTY_NAME` starts with on Armbian:
     // - `Armbian` for official releases
     // - `Armbian_community` for community releases
@@ -58,7 +58,7 @@ FF_MAYBE_UNUSED static bool detectArmbianVersion(FFOSResult* result) {
 }
 
 // Returns false if PrettyName should be updated by caller
-FF_MAYBE_UNUSED static bool getUbuntuFlavour(FFOSResult* result) {
+FF_A_UNUSED static bool getUbuntuFlavour(FFOSResult* result) {
     if (detectArmbianVersion(result)) {
         return true;
     } else if (ffStrbufStartsWithS(&result->prettyName, "Linux Lite ")) {
@@ -92,6 +92,14 @@ FF_MAYBE_UNUSED static bool getUbuntuFlavour(FFOSResult* result) {
         ffStrbufSetF(&result->prettyName, "LliureX %s", result->version.chars);
         ffStrbufSetStatic(&result->idLike, "ubuntu");
         return true;
+    }
+
+    // xdgConfigDirs contains plasma only
+    if (ffPathExists("/var/lib/dpkg/info/ubuntustudio-desktop.list", FF_PATHTYPE_FILE)) {
+        ffStrbufSetStatic(&result->name, "Ubuntu Studio");
+        ffStrbufSetStatic(&result->id, "ubuntu-studio");
+        ffStrbufSetStatic(&result->idLike, "ubuntu");
+        return false;
     }
 
     const char* xdgConfigDirs = getenv("XDG_CONFIG_DIRS");
@@ -141,9 +149,9 @@ FF_MAYBE_UNUSED static bool getUbuntuFlavour(FFOSResult* result) {
         return false;
     }
 
-    if (ffStrContains(xdgConfigDirs, "studio")) {
-        ffStrbufSetStatic(&result->name, "Ubuntu Studio");
-        ffStrbufSetStatic(&result->id, "ubuntu-studio");
+    if (ffStrContains(xdgConfigDirs, "ukui")) {
+        ffStrbufSetStatic(&result->name, "Ubuntu Kylin");
+        ffStrbufSetStatic(&result->id, "ubuntu-kylin");
         ffStrbufSetStatic(&result->idLike, "ubuntu");
         return false;
     }
@@ -162,10 +170,17 @@ FF_MAYBE_UNUSED static bool getUbuntuFlavour(FFOSResult* result) {
         return false;
     }
 
+    if (ffStrContains(xdgConfigDirs, "unity")) {
+        ffStrbufSetStatic(&result->name, "Ubuntu Unity");
+        ffStrbufSetStatic(&result->id, "ubuntu-unity");
+        ffStrbufSetStatic(&result->idLike, "ubuntu");
+        return false;
+    }
+
     return false;
 }
 
-FF_MAYBE_UNUSED static void getDebianVersion(FFOSResult* result) {
+FF_A_UNUSED static void getDebianVersion(FFOSResult* result) {
     FF_STRBUF_AUTO_DESTROY debianVersion = ffStrbufCreate();
     ffAppendFileBuffer("/etc/debian_version", &debianVersion);
     ffStrbufTrimRightSpace(&debianVersion);
@@ -178,7 +193,7 @@ FF_MAYBE_UNUSED static void getDebianVersion(FFOSResult* result) {
     ffStrbufSetF(&result->prettyName, "%s %s (%s)", result->name.chars, result->versionID.chars, result->codename.chars);
 }
 
-FF_MAYBE_UNUSED static bool detectDebianDerived(FFOSResult* result) {
+FF_A_UNUSED static bool detectDebianDerived(FFOSResult* result) {
     if (detectArmbianVersion(result)) {
         return true;
     } else if (ffStrbufStartsWithS(&result->name, "Loc-OS")) {
@@ -228,9 +243,9 @@ FF_MAYBE_UNUSED static bool detectDebianDerived(FFOSResult* result) {
         FF_STRBUF_AUTO_DESTROY sub = ffStrbufCreate();
         FF_STRBUF_AUTO_DESTROY rc = ffStrbufCreate();
         if (ffParsePropFileValues("/boot/dietpi/.version", 3, (FFpropquery[]) {
-                                                                  {"G_DIETPI_VERSION_CORE=", &core},
-                                                                  {"G_DIETPI_VERSION_SUB=", &sub},
-                                                                  {"G_DIETPI_VERSION_RC=", &rc},
+                                                                  { "G_DIETPI_VERSION_CORE=", &core },
+                                                                  { "G_DIETPI_VERSION_SUB=", &sub },
+                                                                  { "G_DIETPI_VERSION_RC=", &rc },
                                                               })) {
             ffStrbufAppendF(&result->prettyName, " %s.%s.%s", core.chars, sub.chars, rc.chars);
         }
@@ -272,7 +287,7 @@ FF_MAYBE_UNUSED static bool detectDebianDerived(FFOSResult* result) {
     return false;
 }
 
-FF_MAYBE_UNUSED static bool detectFedoraVariant(FFOSResult* result) {
+FF_A_UNUSED static bool detectFedoraVariant(FFOSResult* result) {
     if (ffStrbufEqualS(&result->variantID, "coreos") || ffStrbufEqualS(&result->variantID, "kinoite") || ffStrbufEqualS(&result->variantID, "sericea") || ffStrbufEqualS(&result->variantID, "silverblue")) {
         ffStrbufAppendC(&result->id, '-');
         ffStrbufAppend(&result->id, &result->variantID);
@@ -282,7 +297,7 @@ FF_MAYBE_UNUSED static bool detectFedoraVariant(FFOSResult* result) {
     return false;
 }
 
-static bool detectBedrock(FFOSResult* os) {
+FF_A_UNUSED static bool detectBedrock(FFOSResult* os) {
     const char* bedrockRestrict = getenv("BEDROCK_RESTRICT");
     if (bedrockRestrict && bedrockRestrict[0] == '1') {
         return false;
@@ -290,22 +305,53 @@ static bool detectBedrock(FFOSResult* os) {
     return parseOsRelease(FASTFETCH_TARGET_DIR_ROOT "/bedrock/strata/bedrock/etc/os-release", os);
 }
 
+FF_A_UNUSED static void detectDeepinEnhancement(FFOSResult* result) {
+    if (ffStrbufContainC(&result->prettyName, '(')) {
+        return;
+    }
+
+    FF_STRBUF_AUTO_DESTROY minor = ffStrbufCreate();
+    FF_STRBUF_AUTO_DESTROY edition = ffStrbufCreate();
+
+    if (!ffParsePropFileValues(
+            FASTFETCH_TARGET_DIR_ETC "/os-version",
+            2,
+            (FFpropquery[]) {
+                { "MinorVersion=", &minor },
+                { "EditionName=", &edition },
+            }) ||
+        minor.length == 0) {
+        return;
+    }
+
+    ffStrbufSet(&result->versionID, &minor);
+
+    if (edition.length > 0) {
+        ffStrbufSetF(&result->prettyName, "%s %s (%s)", result->name.chars, minor.chars, edition.chars);
+    } else {
+        ffStrbufSetF(&result->prettyName, "%s %s", result->name.chars, minor.chars);
+    }
+}
+
 static void detectOS(FFOSResult* os) {
 #ifdef FF_CUSTOM_OS_RELEASE_PATH
     parseOsRelease(FF_STR(FF_CUSTOM_OS_RELEASE_PATH), os);
-#    ifdef FF_CUSTOM_LSB_RELEASE_PATH
+    #ifdef FF_CUSTOM_LSB_RELEASE_PATH
     parseLsbRelease(FF_STR(FF_CUSTOM_LSB_RELEASE_PATH), os);
-#    endif
+    #endif
     return;
 #endif
 
+#ifdef __linux__
     if (detectBedrock(os)) {
         return;
     }
+#endif
 
     // Refer: https://gist.github.com/natefoo/814c5bf936922dad97ff
 
     parseOsRelease(FASTFETCH_TARGET_DIR_ETC "/os-release", os);
+
     if (os->id.length == 0 || os->version.length == 0 || os->prettyName.length == 0 || os->codename.length == 0) {
         parseLsbRelease(FASTFETCH_TARGET_DIR_ETC "/lsb-release", os);
     }
@@ -344,6 +390,8 @@ void ffDetectOSImpl(FFOSResult* os) {
             ffStrbufSetS(&os->id, "lmde");
             ffStrbufSetS(&os->idLike, "linuxmint");
         }
+    } else if (ffStrbufEqualS(&os->id, "deepin")) {
+        detectDeepinEnhancement(os);
     }
 #endif
 }

@@ -4,7 +4,7 @@
 
 #include <utmp.h>
 
-const char* ffDetectUsers(FF_MAYBE_UNUSED FFUsersOptions* options, FFlist* users) {
+const char* ffDetectUsers(FF_A_UNUSED FFUsersOptions* options, FFlist* users) {
     FF_AUTO_CLOSE_FILE FILE* fp = fopen(_PATH_UTMP, "r");
     if (!fp) {
         return "fopen(_PATH_UTMP, r) failed";
@@ -27,7 +27,7 @@ next:
             }
         }
 
-        FFUserResult* user = (FFUserResult*) ffListAdd(users);
+        FFUserResult* user = FF_LIST_ADD(FFUserResult, *users);
         ffStrbufInitS(&user->name, n.ut_name);
         ffStrbufInitS(&user->hostName, n.ut_host);
         ffStrbufInitS(&user->sessionName, n.ut_line);

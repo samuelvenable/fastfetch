@@ -41,7 +41,7 @@ void ffGenerateWMThemeJsonConfig(FFWMThemeOptions* options, yyjson_mut_doc* doc,
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateWMThemeJsonResult(FF_MAYBE_UNUSED FFWMThemeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateWMThemeJsonResult(FF_A_UNUSED FFWMThemeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FF_STRBUF_AUTO_DESTROY themeOrError = ffStrbufCreate();
     if (!ffDetectWmTheme(&themeOrError)) {
         yyjson_mut_obj_add_strbuf(doc, module, "error", &themeOrError);
@@ -62,7 +62,7 @@ void ffDestroyWMThemeOptions(FFWMThemeOptions* options) {
 
 FFModuleBaseInfo ffWMThemeModuleInfo = {
     .name = FF_WMTHEME_MODULE_NAME,
-    .description = "Print current theme of window manager",
+    .description = "Print the current window manager theme",
     .initOptions = (void*) ffInitWMThemeOptions,
     .destroyOptions = (void*) ffDestroyWMThemeOptions,
     .parseJsonObject = (void*) ffParseWMThemeJsonObject,
@@ -70,5 +70,6 @@ FFModuleBaseInfo ffWMThemeModuleInfo = {
     .generateJsonResult = (void*) ffGenerateWMThemeJsonResult,
     .generateJsonConfig = (void*) ffGenerateWMThemeJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"WM theme", "result"},
-    }))};
+        { "WM theme", "result" },
+    }))
+};

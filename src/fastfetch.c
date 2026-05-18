@@ -33,7 +33,7 @@ static void printCommandFormatHelpJson(void) {
 
             yyjson_mut_val* obj = yyjson_mut_obj(doc);
             if (yyjson_mut_obj_add(root, yyjson_mut_strbuf(doc, &type), obj)) {
-                FF_STRBUF_AUTO_DESTROY content = ffStrbufCreateF("Output format of the module `%s`. See Wiki for formatting syntax\n", baseInfo->name);
+                FF_STRBUF_AUTO_DESTROY content = ffStrbufCreateF("Output format for the `%s` module. See Wiki for formatting syntax\n", baseInfo->name);
                 for (unsigned i = 0; i < baseInfo->formatArgs.count; i++) {
                     const FFModuleFormatArg* arg = &baseInfo->formatArgs.args[i];
                     ffStrbufAppendF(&content, "    %u. {%s}: %s\n", i + 1, arg->name, arg->desc);
@@ -62,10 +62,18 @@ static void printCommandFormatHelp(const char* command) {
                 puts("To see how a format string is constructed, take a look at https://github.com/fastfetch-cli/fastfetch/wiki/Format-String-Guide.");
                 puts("The following variables are passed:");
 
+                uint32_t maxWidth = 20;
+                for (unsigned i = 0; i < baseInfo->formatArgs.count; i++) {
+                    uint32_t len = (uint32_t) strlen(baseInfo->formatArgs.args[i].name) + 2;
+                    if (len > maxWidth) {
+                        maxWidth = len;
+                    }
+                }
+
                 for (unsigned i = 0; i < baseInfo->formatArgs.count; i++) {
                     const FFModuleFormatArg* arg = &baseInfo->formatArgs.args[i];
                     ffStrbufSetF(&variable, "{%s}", arg->name);
-                    printf("%20s: %s\n", variable.chars, arg->desc);
+                    printf("%*s: %s\n", (int) maxWidth, variable.chars, arg->desc);
                 }
             } else {
                 fprintf(stderr, "Error: Module '%s' doesn't support output formatting\n", baseInfo->name);
@@ -637,8 +645,8 @@ static void parseCommand(FFdata* data, char* key, char* value) {
         }
     } else if (ffStrEqualsIgnCase(key, "--format")) {
         if (!!ffOptionParseEnum(key, value, (FFKeyValuePair[]) {
-                                                {"default", false},
-                                                {"json", true},
+                                                { "default", false },
+                                                { "json", true },
                                                 {},
                                             })) {
             enableJsonOutput(data);

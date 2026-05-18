@@ -2,35 +2,35 @@
 #include "common/library.h"
 
 #if _WIN32
-#    include "common/debug.h"
-#    include "common/windows/nt.h"
-#    include <errno.h>
-#    include <ntstatus.h>
+    #include "common/debug.h"
+    #include "common/windows/nt.h"
+    #include <errno.h>
+    #include <ntstatus.h>
 #endif
 
 #ifndef FF_DISABLE_DLOPEN
 
-#    include <stdarg.h>
+    #include <stdarg.h>
 
-// Clang doesn't define __SANITIZE_ADDRESS__ but defines __has_feature(address_sanitizer)
-#    if !defined(__SANITIZE_ADDRESS__) && defined(__has_feature)
-#        if __has_feature(address_sanitizer)
-#            define __SANITIZE_ADDRESS__
-#        endif
-#    endif
+    // Clang doesn't define __SANITIZE_ADDRESS__ but defines __has_feature(address_sanitizer)
+    #if !defined(__SANITIZE_ADDRESS__) && defined(__has_feature)
+        #if __has_feature(address_sanitizer)
+            #define __SANITIZE_ADDRESS__
+        #endif
+    #endif
 
-#    ifndef FF_DLOPEN_FLAGS
-#        ifdef __SANITIZE_ADDRESS__
-#            define FF_DLOPEN_FLAGS RTLD_LAZY | RTLD_NODELETE
-#        else
-#            define FF_DLOPEN_FLAGS RTLD_LAZY
-#        endif
-#    endif
+    #ifndef FF_DLOPEN_FLAGS
+        #ifdef __SANITIZE_ADDRESS__
+            #define FF_DLOPEN_FLAGS RTLD_LAZY | RTLD_NODELETE
+        #else
+            #define FF_DLOPEN_FLAGS RTLD_LAZY
+        #endif
+    #endif
 
 static void* libraryLoad(const char* path, int maxVersion) {
     void* result = dlopen(path, FF_DLOPEN_FLAGS);
 
-#    ifdef _WIN32
+    #if _WIN32
 
     // libX.dll.1 never exists on Windows, while libX-1.dll may exist
     FF_UNUSED(maxVersion)
@@ -48,7 +48,7 @@ static void* libraryLoad(const char* path, int maxVersion) {
     strcpy(mempcpy(absPath, instance.state.platform.exePath.chars, pathLen + 1), path);
     return dlopen(absPath, FF_DLOPEN_FLAGS);
 
-#    else
+    #else
 
     if (result != NULL || maxVersion < 0) {
         return result;
@@ -70,7 +70,7 @@ static void* libraryLoad(const char* path, int maxVersion) {
         ffStrbufSubstrBefore(&pathbuf, originalLength);
     }
 
-#    endif
+    #endif
 
     return result;
 }
@@ -102,7 +102,7 @@ void* ffLibraryLoad(const char* path, int maxVersion, ...) {
 
 #if _WIN32
 
-void* dlopen(const char* path, FF_MAYBE_UNUSED int mode) {
+void* dlopen(const char* path, FF_A_UNUSED int mode) {
     wchar_t pathW[MAX_PATH + 1];
     ULONG pathWBytes = 0;
 
@@ -114,7 +114,7 @@ void* dlopen(const char* path, FF_MAYBE_UNUSED int mode) {
 
     PVOID module = NULL;
     status = LdrLoadDll(NULL, NULL, &(UNICODE_STRING) {
-                                        .Length = (USHORT) pathWBytes - sizeof(wchar_t), // Exclude null terminator
+                                        .Length = (USHORT) (pathWBytes - sizeof(wchar_t)), // Exclude null terminator
                                         .MaximumLength = (USHORT) pathWBytes,
                                         .Buffer = pathW,
                                     },
@@ -139,7 +139,7 @@ int dlclose(void* handle) {
 
 void* dlsym(void* handle, const char* symbol) {
     void* address;
-    USHORT symbolBytes = (USHORT) strlen(symbol) + 1;
+    USHORT symbolBytes = (USHORT) (strlen(symbol) + 1);
     NTSTATUS status = LdrGetProcedureAddress(handle, &(ANSI_STRING) {
                                                          .Length = symbolBytes - sizeof(char),
                                                          .MaximumLength = symbolBytes,
@@ -158,7 +158,7 @@ void* ffLibraryGetModule(const wchar_t* libraryFileName) {
     assert(libraryFileName != NULL && "Use \"ffGetPeb()->ImageBaseAddress\" instead");
 
     void* module = NULL;
-    USHORT libraryFileNameBytes = (USHORT) (wcslen(libraryFileName) * sizeof(wchar_t)) + sizeof(wchar_t);
+    USHORT libraryFileNameBytes = (USHORT) (wcslen(libraryFileName) * sizeof(wchar_t) + sizeof(wchar_t));
     NTSTATUS status = LdrGetDllHandle(NULL, NULL, &(UNICODE_STRING) {
                                                       .Length = libraryFileNameBytes - sizeof(wchar_t),
                                                       .MaximumLength = libraryFileNameBytes,

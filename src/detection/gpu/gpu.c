@@ -13,7 +13,7 @@ const char* FF_GPU_VENDOR_NAME_MTHREADS = "Moore Threads";
 const char* FF_GPU_VENDOR_NAME_QUALCOMM = "Qualcomm";
 const char* FF_GPU_VENDOR_NAME_MTK = "MTK";
 const char* FF_GPU_VENDOR_NAME_VMWARE = "VMware";
-const char* FF_GPU_VENDOR_NAME_PARALLEL = "Parallel";
+const char* FF_GPU_VENDOR_NAME_PARALLELS = "Parallels";
 const char* FF_GPU_VENDOR_NAME_MICROSOFT = "Microsoft";
 const char* FF_GPU_VENDOR_NAME_REDHAT = "RedHat";
 const char* FF_GPU_VENDOR_NAME_ORACLE = "Oracle";
@@ -22,6 +22,7 @@ const char* FF_GPU_VENDOR_NAME_LOONGSON = "Loongson";
 const char* FF_GPU_VENDOR_NAME_JINGJIA_MICRO = "Jingjia Micro";
 const char* FF_GPU_VENDOR_NAME_HUAWEI = "Huawei";
 const char* FF_GPU_VENDOR_NAME_ZHAOXIN = "Zhaoxin";
+const char* FF_GPU_VENDOR_NAME_QEMU = "QEMU";
 
 const char* ffGPUGetVendorString(unsigned vendorId) {
     // https://devicehunt.com/all-pci-vendors
@@ -52,7 +53,8 @@ const char* ffGPUGetVendorString(unsigned vendorId) {
         case 0x1af4:
             return FF_GPU_VENDOR_NAME_REDHAT;
         case 0x1ab8:
-            return FF_GPU_VENDOR_NAME_PARALLEL;
+        case 0x05404c42: // PD
+            return FF_GPU_VENDOR_NAME_PARALLELS;
         case 0x1414:
             return FF_GPU_VENDOR_NAME_MICROSOFT;
         case 0x108e:
@@ -68,6 +70,8 @@ const char* ffGPUGetVendorString(unsigned vendorId) {
             return FF_GPU_VENDOR_NAME_HUAWEI;
         case 0x1d17:
             return FF_GPU_VENDOR_NAME_ZHAOXIN;
+        case 0x1234: // https://admin.pci-ids.ucw.cz/read/PC/1234
+            return FF_GPU_VENDOR_NAME_QEMU;
         default:
             return NULL;
     }
@@ -83,13 +87,13 @@ const char* detectByOpenGL(FFlist* gpus) {
     ffStrbufInit(&result.slv);
     ffStrbufInit(&result.library);
 
-    __attribute__((__cleanup__(ffDestroyOpenGLOptions))) FFOpenGLOptions options;
+    FF_A_CLEANUP(ffDestroyOpenGLOptions) FFOpenGLOptions options;
     ffInitOpenGLOptions(&options);
     const char* error = ffDetectOpenGL(&options, &result);
     FF_DEBUG("OpenGL detection returns: %s", error ?: "success");
 
     if (!error) {
-        FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+        FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
         gpu->type = FF_GPU_TYPE_UNKNOWN;
         ffStrbufInitMove(&gpu->vendor, &result.vendor);
         ffStrbufInitMove(&gpu->name, &result.renderer);
@@ -101,7 +105,7 @@ const char* detectByOpenGL(FFlist* gpus) {
         gpu->coreCount = FF_GPU_CORE_COUNT_UNSET;
         gpu->frequency = FF_GPU_FREQUENCY_UNSET;
         gpu->coreUsage = FF_GPU_CORE_USAGE_UNSET;
-        gpu->dedicated = gpu->shared = (FFGPUMemory) {0, 0};
+        gpu->dedicated = gpu->shared = (FFGPUMemory) { 0, 0 };
         gpu->deviceId = 0;
 
         FF_DEBUG("OpenGL reported renderer='%s', vendor='%s', version='%s'",

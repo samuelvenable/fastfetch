@@ -18,7 +18,7 @@ extern const char* FF_GPU_VENDOR_NAME_MTHREADS;
 extern const char* FF_GPU_VENDOR_NAME_QUALCOMM;
 extern const char* FF_GPU_VENDOR_NAME_MTK;
 extern const char* FF_GPU_VENDOR_NAME_VMWARE;
-extern const char* FF_GPU_VENDOR_NAME_PARALLEL;
+extern const char* FF_GPU_VENDOR_NAME_PARALLELS;
 extern const char* FF_GPU_VENDOR_NAME_MICROSOFT;
 extern const char* FF_GPU_VENDOR_NAME_REDHAT;
 extern const char* FF_GPU_VENDOR_NAME_ORACLE;
@@ -27,6 +27,7 @@ extern const char* FF_GPU_VENDOR_NAME_LOONGSON;
 extern const char* FF_GPU_VENDOR_NAME_JINGJIA_MICRO;
 extern const char* FF_GPU_VENDOR_NAME_HUAWEI;
 extern const char* FF_GPU_VENDOR_NAME_ZHAOXIN;
+extern const char* FF_GPU_VENDOR_NAME_QEMU;
 
 typedef struct FFGPUMemory {
     uint64_t total;
@@ -66,14 +67,14 @@ typedef struct FFGpuDriverPciBusId {
 void ffGPUFillVendorAndName(uint8_t subclass, uint16_t vendor, uint16_t device, FFGPUResult* gpu);
 void ffGPUQueryAmdGpuName(uint16_t deviceId, uint8_t revisionId, FFGPUResult* gpu);
 
-#    if FF_HAVE_DRM
+    #if FF_HAVE_DRM
 const char* ffDrmDetectRadeon(const FFGPUOptions* options, FFGPUResult* gpu, const char* renderPath);
 const char* ffDrmDetectAmdgpu(const FFGPUOptions* options, FFGPUResult* gpu, const char* renderPath);
 const char* ffDrmDetectI915(FFGPUResult* gpu, int fd);
 const char* ffDrmDetectXe(FFGPUResult* gpu, int fd);
 const char* ffDrmDetectAsahi(FFGPUResult* gpu, int fd);
 const char* ffDrmDetectNouveau(FFGPUResult* gpu, int fd);
-#    endif // FF_HAVE_DRM
+    #endif // FF_HAVE_DRM
 
 const char* ffGPUDetectDriverSpecific(const FFGPUOptions* options, FFGPUResult* gpu, FFGpuDriverPciBusId pciBusId);
 #endif // defined(XXX)

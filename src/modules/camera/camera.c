@@ -33,7 +33,7 @@ static void printDevice(FFCameraOptions* options, const FFCameraResult* device, 
 }
 
 bool ffPrintCamera(FFCameraOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFCameraResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectCamera(&result);
 
     if (error) {
@@ -76,8 +76,8 @@ void ffGenerateCameraJsonConfig(FFCameraOptions* options, yyjson_mut_doc* doc, y
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateCameraJsonResult(FF_MAYBE_UNUSED FFCameraOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFCameraResult));
+bool ffGenerateCameraJsonResult(FF_A_UNUSED FFCameraOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectCamera(&result);
 
     if (error) {
@@ -124,10 +124,11 @@ FFModuleBaseInfo ffCameraModuleInfo = {
     .generateJsonResult = (void*) ffGenerateCameraJsonResult,
     .generateJsonConfig = (void*) ffGenerateCameraJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Device name", "name"},
-        {"Vendor", "vendor"},
-        {"Color space", "colorspace"},
-        {"Identifier", "id"},
-        {"Width (in px)", "width"},
-        {"Height (in px)", "height"},
-    }))};
+        { "Device name", "name" },
+        { "Vendor", "vendor" },
+        { "Color space", "colorspace" },
+        { "Identifier", "id" },
+        { "Width (in px)", "width" },
+        { "Height (in px)", "height" },
+    }))
+};

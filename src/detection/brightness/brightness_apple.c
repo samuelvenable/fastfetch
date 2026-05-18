@@ -8,21 +8,21 @@
 // DDC/CI
 #ifdef __aarch64__
 typedef CFTypeRef IOAVServiceRef;
-extern IOAVServiceRef IOAVServiceCreate(CFAllocatorRef allocator) __attribute__((weak_import));
-extern IOAVServiceRef IOAVServiceCreateWithService(CFAllocatorRef allocator, io_service_t service) __attribute__((weak_import));
-extern IOReturn IOAVServiceCopyEDID(IOAVServiceRef service, CFDataRef* x2) __attribute__((weak_import));
-extern IOReturn IOAVServiceReadI2C(IOAVServiceRef service, uint32_t chipAddress, uint32_t offset, void* outputBuffer, uint32_t outputBufferSize) __attribute__((weak_import));
-extern IOReturn IOAVServiceWriteI2C(IOAVServiceRef service, uint32_t chipAddress, uint32_t dataAddress, void* inputBuffer, uint32_t inputBufferSize) __attribute__((weak_import));
+extern IOAVServiceRef IOAVServiceCreate(CFAllocatorRef allocator) FF_A_WEAK_IMPORT;
+extern IOAVServiceRef IOAVServiceCreateWithService(CFAllocatorRef allocator, io_service_t service) FF_A_WEAK_IMPORT;
+extern IOReturn IOAVServiceCopyEDID(IOAVServiceRef service, CFDataRef* x2) FF_A_WEAK_IMPORT;
+extern IOReturn IOAVServiceReadI2C(IOAVServiceRef service, uint32_t chipAddress, uint32_t offset, void* outputBuffer, uint32_t outputBufferSize) FF_A_WEAK_IMPORT;
+extern IOReturn IOAVServiceWriteI2C(IOAVServiceRef service, uint32_t chipAddress, uint32_t dataAddress, void* inputBuffer, uint32_t inputBufferSize) FF_A_WEAK_IMPORT;
 #else
-// DDC/CI (Intel)
-#    include <IOKit/IOKitLib.h>
-#    include <IOKit/graphics/IOGraphicsLib.h>
-#    include <IOKit/i2c/IOI2CInterface.h>
-extern void CGSServiceForDisplayNumber(CGDirectDisplayID display, io_service_t* service) __attribute__((weak_import));
+    // DDC/CI (Intel)
+    #include <IOKit/IOKitLib.h>
+    #include <IOKit/graphics/IOGraphicsLib.h>
+    #include <IOKit/i2c/IOI2CInterface.h>
+extern void CGSServiceForDisplayNumber(CGDirectDisplayID display, io_service_t* service) FF_A_WEAK_IMPORT;
 #endif
 
 // ACPI
-extern int DisplayServicesGetBrightness(CGDirectDisplayID display, float* brightness) __attribute__((weak_import));
+extern int DisplayServicesGetBrightness(CGDirectDisplayID display, float* brightness) FF_A_WEAK_IMPORT;
 
 // Works for internal display
 static const char* detectWithDisplayServices(const FFDisplayServerResult* displayServer, FFlist* result) {
@@ -34,7 +34,7 @@ static const char* detectWithDisplayServices(const FFDisplayServerResult* displa
         if (display->type == FF_DISPLAY_TYPE_BUILTIN || display->type == FF_DISPLAY_TYPE_UNKNOWN) {
             float value;
             if (DisplayServicesGetBrightness((CGDirectDisplayID) display->id, &value) == kCGErrorSuccess) {
-                FFBrightnessResult* brightness = (FFBrightnessResult*) ffListAdd(result);
+                FFBrightnessResult* brightness = FF_LIST_ADD(FFBrightnessResult, *result);
                 brightness->current = value;
                 brightness->max = 1;
                 brightness->min = 0;
@@ -50,7 +50,7 @@ static const char* detectWithDisplayServices(const FFDisplayServerResult* displa
 #ifdef __aarch64__
 // https://github.com/waydabber/m1ddc
 // Works for Apple Silicon and USB-C adapter connection ( but not HTMI )
-static const char* detectWithDdcci(FF_MAYBE_UNUSED const FFDisplayServerResult* displayServer, FFBrightnessOptions* options, FFlist* result) {
+static const char* detectWithDdcci(FF_A_UNUSED const FFDisplayServerResult* displayServer, FFBrightnessOptions* options, FFlist* result) {
     if (!IOAVServiceCreate || !IOAVServiceReadI2C || !IOAVServiceWriteI2C) {
         return "IOAVService is not available";
     }
@@ -85,7 +85,7 @@ static const char* detectWithDdcci(FF_MAYBE_UNUSED const FFDisplayServerResult* 
         }
 
         {
-            uint8_t i2cIn[4] = {0x82, 0x01, 0x10 /* luminance */};
+            uint8_t i2cIn[4] = { 0x82, 0x01, 0x10 /* luminance */ };
             i2cIn[3] = 0x6e ^ i2cIn[0] ^ i2cIn[1] ^ i2cIn[2];
 
             for (uint32_t i = 0; i < 2; ++i) {
@@ -103,7 +103,7 @@ static const char* detectWithDdcci(FF_MAYBE_UNUSED const FFDisplayServerResult* 
             uint32_t current = ((uint32_t) i2cOut[8] << 8u) + (uint32_t) i2cOut[9];
             uint32_t max = ((uint32_t) i2cOut[6] << 8u) + (uint32_t) i2cOut[7];
 
-            FFBrightnessResult* brightness = (FFBrightnessResult*) ffListAdd(result);
+            FFBrightnessResult* brightness = FF_LIST_ADD(FFBrightnessResult, *result);
             brightness->max = max;
             brightness->min = 0;
             brightness->current = current;
@@ -185,7 +185,7 @@ static const char* detectWithDdcci(const FFDisplayServerResult* displayServer, F
                     continue;
                 }
 
-                uint8_t i2cIn[] = {0x51, 0x82, 0x01, 0x10 /* luminance */, 0};
+                uint8_t i2cIn[] = { 0x51, 0x82, 0x01, 0x10 /* luminance */, 0 };
                 i2cIn[4] = 0x6E ^ i2cIn[0] ^ i2cIn[1] ^ i2cIn[2] ^ i2cIn[3];
 
                 IOI2CRequest request = {
@@ -214,7 +214,7 @@ static const char* detectWithDdcci(const FFDisplayServerResult* displayServer, F
                 uint32_t current = ((uint32_t) i2cOut[8] << 8u) + (uint32_t) i2cOut[9];
                 uint32_t max = ((uint32_t) i2cOut[6] << 8u) + (uint32_t) i2cOut[7];
 
-                FFBrightnessResult* brightness = (FFBrightnessResult*) ffListAdd(result);
+                FFBrightnessResult* brightness = FF_LIST_ADD(FFBrightnessResult, *result);
                 brightness->max = max;
                 brightness->min = 0;
                 brightness->current = current;

@@ -13,29 +13,29 @@
 #include <stdint.h>
 
 #ifdef FF_HAVE_DRM_AMDGPU
-#    include <amdgpu.h>
-#    include <amdgpu_drm.h>
-#    include <fcntl.h>
+    #include <amdgpu.h>
+    #include <amdgpu_drm.h>
+    #include <fcntl.h>
 #endif
 
 #ifdef FF_HAVE_DRM
-#    include "intel_drm.h"
-#    include <fcntl.h>
-#    include <sys/ioctl.h>
+    #include "intel_drm.h"
+    #include <fcntl.h>
+    #include <sys/ioctl.h>
 #endif
 
 #if defined(FF_HAVE_DRM) && defined(__aarch64__)
-// https://github.com/alyssarosenzweig/linux/blob/agx-uapi-v7/include/uapi/drm/asahi_drm.h
-// Found in kernel-headers-6.14.4-400.asahi.fc42.aarch64
-#    if __has_include(<drm/asahi_drm.h>)
-#        include <drm/asahi_drm.h>
-#    else
-#        include "asahi_drm.h"
-#    endif
-#    define FF_HAVE_DRM_ASAHI 1
+    // https://github.com/alyssarosenzweig/linux/blob/agx-uapi-v7/include/uapi/drm/asahi_drm.h
+    // Found in kernel-headers-6.14.4-400.asahi.fc42.aarch64
+    #if __has_include(<drm/asahi_drm.h>)
+        #include <drm/asahi_drm.h>
+    #else
+        #include "asahi_drm.h"
+    #endif
+    #define FF_HAVE_DRM_ASAHI 1
 #endif
 
-static bool pciDetectDriver(FFstrbuf* result, FFstrbuf* pciDir, FFstrbuf* buffer, FF_MAYBE_UNUSED const char* drmKey) {
+static bool pciDetectDriver(FFstrbuf* result, FFstrbuf* pciDir, FFstrbuf* buffer, FF_A_UNUSED const char* drmKey) {
     uint32_t pciDirLength = pciDir->length;
     ffStrbufAppendS(pciDir, "/driver");
     char pathBuf[PATH_MAX];
@@ -80,7 +80,7 @@ static bool pciDetectDriver(FFstrbuf* result, FFstrbuf* pciDir, FFstrbuf* buffer
     return true;
 }
 
-FF_MAYBE_UNUSED static const char* drmFindRenderFromCard(const char* drmCardKey, FFstrbuf* result) {
+FF_A_UNUSED static const char* drmFindRenderFromCard(const char* drmCardKey, FFstrbuf* result) {
     char path[PATH_MAX];
     sprintf(path, "/sys/class/drm/%s/device/drm", drmCardKey);
     FF_AUTO_CLOSE_DIR DIR* dirp = opendir(path);
@@ -108,12 +108,12 @@ static const char* drmDetectAmdSpecific(const FFGPUOptions* options, FFGPUResult
     if (ffStrbufEqualS(&gpu->driver, "radeon")) {
         return ffDrmDetectRadeon(options, gpu, buffer->chars);
     } else {
-#    if FF_HAVE_DRM_AMDGPU
+    #if FF_HAVE_DRM_AMDGPU
         return ffDrmDetectAmdgpu(options, gpu, buffer->chars);
-#    else
+    #else
         FF_UNUSED(options, gpu, drmKey, buffer);
         return "Fastfetch is not compiled with libdrm_amdgpu support";
-#    endif
+    #endif
     }
 #else
     FF_UNUSED(options, gpu, drmKey, buffer);
@@ -392,7 +392,7 @@ static const char* detectPci(const FFGPUOptions* options, FFlist* gpus, FFstrbuf
         return "Likely an auxiliary display controller"; // #2034
     }
 
-    FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+    FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
     ffStrbufInitStatic(&gpu->vendor, ffGPUGetVendorString((uint16_t) vendorId));
     ffStrbufInit(&gpu->name);
     ffStrbufInit(&gpu->driver);
@@ -497,20 +497,20 @@ static const char* detectPci(const FFGPUOptions* options, FFlist* gpus, FFstrbuf
 
 #if __aarch64__
 
-FF_MAYBE_UNUSED static const char* drmDetectAsahiSpecific(FFGPUResult* gpu, const char* name, FF_MAYBE_UNUSED FFstrbuf* buffer, FF_MAYBE_UNUSED const char* drmKey) {
+FF_A_UNUSED static const char* drmDetectAsahiSpecific(FFGPUResult* gpu, const char* name, FF_A_UNUSED FFstrbuf* buffer, FF_A_UNUSED const char* drmKey) {
     if (sscanf(name, "agx-t%lu", &gpu->deviceId) == 1) {
         ffStrbufSetStatic(&gpu->name, ffCPUAppleCodeToName((uint32_t) gpu->deviceId));
     }
     ffStrbufSetStatic(&gpu->vendor, FF_GPU_VENDOR_NAME_APPLE);
 
-#    if FF_HAVE_DRM_ASAHI
+    #if FF_HAVE_DRM_ASAHI
     ffStrbufSetS(buffer, "/dev/dri/");
     ffStrbufAppendS(buffer, drmKey);
     FF_AUTO_CLOSE_FD int fd = open(buffer->chars, O_RDONLY | O_CLOEXEC);
     if (fd >= 0) {
         return ffDrmDetectAsahi(gpu, fd);
     }
-#    endif
+    #endif
 
     return NULL;
 }
@@ -528,7 +528,7 @@ static const char* detectOf(FFlist* gpus, FFstrbuf* buffer, FFstrbuf* drmDir, co
         ++name;
     }
 
-    FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+    FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
     gpu->index = FF_GPU_INDEX_UNSET;
     gpu->deviceId = 0;
     ffStrbufInit(&gpu->name);

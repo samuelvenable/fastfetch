@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-const char* ffDetectBrightness(FF_MAYBE_UNUSED FFBrightnessOptions* options, FFlist* result) {
+const char* ffDetectBrightness(FF_A_UNUSED FFBrightnessOptions* options, FFlist* result) {
     char path[] = "/dev/ttyCX";
     for (char i = '0'; i <= '9'; ++i) {
         path[strlen("/dev/ttyC")] = i;
@@ -31,7 +31,7 @@ const char* ffDetectBrightness(FF_MAYBE_UNUSED FFBrightnessOptions* options, FFl
             continue;
         }
 
-        FFBrightnessResult* brightness = (FFBrightnessResult*) ffListAdd(result);
+        FFBrightnessResult* brightness = FF_LIST_ADD(FFBrightnessResult, *result);
         ffStrbufInitF(&brightness->name, "ttyC%c", i);
 
         brightness->max = param.max;

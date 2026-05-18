@@ -27,7 +27,7 @@ static inline int pciReadConf(int fd, uint8_t bus, uint8_t device, uint8_t func,
     return 0;
 }
 
-const char* ffDetectGPUImpl(FF_MAYBE_UNUSED const FFGPUOptions* options, FFlist* gpus) {
+const char* ffDetectGPUImpl(FF_A_UNUSED const FFGPUOptions* options, FFlist* gpus) {
     char pciDevPath[] = "/dev/pci0";
     FF_AUTO_CLOSE_FD int pcifd = open(pciDevPath, O_RDONLY | O_CLOEXEC);
     if (pcifd < 0) {
@@ -72,7 +72,7 @@ const char* ffDetectGPUImpl(FF_MAYBE_UNUSED const FFGPUOptions* options, FFlist*
                     continue; // Likely an auxiliary display controller (#2034)
                 }
 
-                FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+                FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
                 ffStrbufInitStatic(&gpu->vendor, ffGPUGetVendorString(PCI_VENDOR(pciid)));
                 ffStrbufInit(&gpu->name);
                 ffStrbufInit(&gpu->driver);

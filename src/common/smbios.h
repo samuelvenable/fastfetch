@@ -10,9 +10,9 @@ static inline void ffCleanUpSmbiosValue(FFstrbuf* value) {
 }
 
 // https://github.com/KunYi/DumpSMBIOS
-// https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.7.0.pdf
+// https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.9.0.pdf
 
-typedef enum __attribute__((__packed__)) FFSmbiosType // : uint8_t
+typedef enum FF_A_PACKED FFSmbiosType // : uint8_t
 {
     FF_SMBIOS_TYPE_BIOS = 0,
     FF_SMBIOS_TYPE_SYSTEM_INFO = 1,
@@ -78,8 +78,9 @@ typedef struct FFSmbiosHeader {
     uint8_t Length;
     // Unique handle, used to reference this structure from other structures.
     // Not guaranteed to be consistent across reboots or even multiple reads of the same table.
+    // Must be less than 0xFF00
     uint16_t Handle;
-} __attribute__((__packed__)) FFSmbiosHeader;
+} FF_A_PACKED FFSmbiosHeader;
 static_assert(sizeof(FFSmbiosHeader) == 4, "FFSmbiosHeader should be 4 bytes");
 
 static inline const char* ffSmbiosLocateString(const char* start, uint8_t index /* start from 1 */) {
@@ -95,7 +96,7 @@ static inline const char* ffSmbiosLocateString(const char* start, uint8_t index 
 typedef const FFSmbiosHeader* FFSmbiosHeaderTable[FF_SMBIOS_TYPE__MAX];
 
 const FFSmbiosHeader* ffSmbiosNextEntry(const FFSmbiosHeader* header);
-const FFSmbiosHeaderTable* ffGetSmbiosHeaderTable();
+const FFSmbiosHeaderTable* ffGetSmbiosHeaderTable(void);
 
 #ifdef __linux__
 bool ffGetSmbiosValue(const char* devicesPath, const char* classPath, FFstrbuf* buffer);

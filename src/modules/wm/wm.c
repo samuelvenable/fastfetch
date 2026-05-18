@@ -82,7 +82,7 @@ void ffGenerateWMJsonConfig(FFWMOptions* options, yyjson_mut_doc* doc, yyjson_mu
     yyjson_mut_obj_add_bool(doc, module, "detectPlugin", options->detectPlugin);
 }
 
-bool ffGenerateWMJsonResult(FF_MAYBE_UNUSED FFWMOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateWMJsonResult(FF_A_UNUSED FFWMOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     const FFDisplayServerResult* result = ffConnectDisplayServer();
 
     if (result->wmPrettyName.length == 0) {
@@ -121,7 +121,7 @@ void ffDestroyWMOptions(FFWMOptions* options) {
 
 FFModuleBaseInfo ffWMModuleInfo = {
     .name = FF_WM_MODULE_NAME,
-    .description = "Print window manager name and version",
+    .description = "Print the window manager name and version",
     .initOptions = (void*) ffInitWMOptions,
     .destroyOptions = (void*) ffDestroyWMOptions,
     .parseJsonObject = (void*) ffParseWMJsonObject,
@@ -129,9 +129,10 @@ FFModuleBaseInfo ffWMModuleInfo = {
     .generateJsonResult = (void*) ffGenerateWMJsonResult,
     .generateJsonConfig = (void*) ffGenerateWMJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"WM process name", "process-name"},
-        {"WM pretty name", "pretty-name"},
-        {"WM protocol name", "protocol-name"},
-        {"WM plugin name", "plugin-name"},
-        {"WM version", "version"},
-    }))};
+        { "WM process name", "process-name" },
+        { "WM pretty name", "pretty-name" },
+        { "WM protocol name", "protocol-name" },
+        { "WM plugin name", "plugin-name" },
+        { "WM version", "version" },
+    }))
+};

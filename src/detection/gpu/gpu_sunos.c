@@ -3,11 +3,11 @@
 
 #include <libdevinfo.h>
 
-static int walkDevTree(di_node_t node, FF_MAYBE_UNUSED di_minor_t minor, FFlist* gpus) {
+static int walkDevTree(di_node_t node, FF_A_UNUSED di_minor_t minor, FFlist* gpus) {
     int* vendorId;
     int* deviceId;
     if (di_prop_lookup_ints(DDI_DEV_T_ANY, node, "vendor-id", &vendorId) > 0 && di_prop_lookup_ints(DDI_DEV_T_ANY, node, "device-id", &deviceId) > 0) {
-        FFGPUResult* gpu = (FFGPUResult*) ffListAdd(gpus);
+        FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
         ffStrbufInitS(&gpu->vendor, ffGPUGetVendorString((uint16_t) *vendorId));
         ffStrbufInit(&gpu->name);
         ffStrbufInitS(&gpu->driver, di_driver_name(node));
@@ -42,7 +42,7 @@ static int walkDevTree(di_node_t node, FF_MAYBE_UNUSED di_minor_t minor, FFlist*
     return DI_WALK_CONTINUE;
 }
 
-const char* ffDetectGPUImpl(FF_MAYBE_UNUSED const FFGPUOptions* options, FFlist* gpus) {
+const char* ffDetectGPUImpl(FF_A_UNUSED const FFGPUOptions* options, FFlist* gpus) {
     di_node_t rootNode = di_init("/", DINFOCPYALL);
     if (rootNode == DI_NODE_NIL) {
         return "di_init() failed";
