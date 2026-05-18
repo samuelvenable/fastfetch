@@ -7,9 +7,9 @@
 #include <sys/kbio.h>
 
 #if __has_include(<dev/usb/usb_ioctl.h>)
-#    include <dev/usb/usb_ioctl.h> // FreeBSD
+    #include <dev/usb/usb_ioctl.h> // FreeBSD
 #else
-#    include <bus/u4b/usb_ioctl.h> // DragonFly
+    #include <bus/u4b/usb_ioctl.h> // DragonFly
 #endif
 
 static const char* detectByIoctl(FFlist* devices) {
@@ -18,7 +18,7 @@ static const char* detectByIoctl(FFlist* devices) {
         return "ioctl(KDGKBINFO) failed";
     }
 
-    FFKeyboardDevice* device = (FFKeyboardDevice*) ffListAdd(devices);
+    FFKeyboardDevice* device = FF_LIST_ADD(FFKeyboardDevice, *devices);
 
     switch (kbdInfo.kb_type) {
         case KB_84:
@@ -69,7 +69,7 @@ static const char* detectByUsbhid(FFlist* devices) {
 
                 struct usb_device_info di;
                 if (ioctl(fd, USB_GET_DEVICEINFO, &di) != -1) {
-                    FFKeyboardDevice* device = (FFKeyboardDevice*) ffListAdd(devices);
+                    FFKeyboardDevice* device = FF_LIST_ADD(FFKeyboardDevice, *devices);
                     ffStrbufInitS(&device->serial, di.udi_serial);
                     ffStrbufInitS(&device->name, di.udi_product);
                 }

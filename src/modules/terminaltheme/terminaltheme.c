@@ -59,7 +59,7 @@ void ffGenerateTerminalThemeJsonConfig(FFTerminalThemeOptions* options, yyjson_m
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateTerminalThemeJsonResult(FF_MAYBE_UNUSED FFTerminalThemeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateTerminalThemeJsonResult(FF_A_UNUSED FFTerminalThemeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFTerminalThemeResult result = {};
 
     if (!ffDetectTerminalTheme(&result, false)) {
@@ -94,7 +94,7 @@ void ffDestroyTerminalThemeOptions(FFTerminalThemeOptions* options) {
 
 FFModuleBaseInfo ffTerminalThemeModuleInfo = {
     .name = FF_TERMINALTHEME_MODULE_NAME,
-    .description = "Print current terminal theme (foreground and background colors)",
+    .description = "Print the current terminal theme (foreground and background colors)",
     .initOptions = (void*) ffInitTerminalThemeOptions,
     .destroyOptions = (void*) ffDestroyTerminalThemeOptions,
     .parseJsonObject = (void*) ffParseTerminalThemeJsonObject,
@@ -102,8 +102,9 @@ FFModuleBaseInfo ffTerminalThemeModuleInfo = {
     .generateJsonResult = (void*) ffGenerateTerminalThemeJsonResult,
     .generateJsonConfig = (void*) ffGenerateTerminalThemeJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Terminal foreground color", "fg-color"},
-        {"Terminal foreground type (Dark / Light)", "fg-type"},
-        {"Terminal background color", "bg-color"},
-        {"Terminal background type (Dark / Light)", "bg-type"},
-    }))};
+        { "Terminal foreground color", "fg-color" },
+        { "Terminal foreground type (Dark / Light)", "fg-type" },
+        { "Terminal background color", "bg-color" },
+        { "Terminal background type (Dark / Light)", "bg-type" },
+    }))
+};

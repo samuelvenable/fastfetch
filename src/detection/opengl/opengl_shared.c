@@ -3,19 +3,19 @@
 #include "common/library.h"
 
 #if __has_include(<GL/gl.h>)
-#    include <GL/gl.h>
+    #include <GL/gl.h>
 #elif __APPLE__
-#    define GL_SILENCE_DEPRECATION 1
-#    include <OpenGL/gl.h>
+    #define GL_SILENCE_DEPRECATION 1
+    #include <OpenGL/gl.h>
 #else
-#    define FF_HAVE_NO_GL 1
+    #define FF_HAVE_NO_GL 1
 #endif
 
 #ifndef FF_HAVE_NO_GL
 
-#    ifndef GL_SHADING_LANGUAGE_VERSION // For WGL
-#        define GL_SHADING_LANGUAGE_VERSION 0x8B8C
-#    endif
+    #ifndef GL_SHADING_LANGUAGE_VERSION // For WGL
+        #define GL_SHADING_LANGUAGE_VERSION 0x8B8C
+    #endif
 
 void ffOpenGLHandleResult(FFOpenGLResult* result, __typeof__(&glGetString) ffglGetString) {
     ffStrbufAppendS(&result->version, (const char*) ffglGetString(GL_VERSION));
@@ -24,13 +24,13 @@ void ffOpenGLHandleResult(FFOpenGLResult* result, __typeof__(&glGetString) ffglG
     ffStrbufAppendS(&result->slv, (const char*) ffglGetString(GL_SHADING_LANGUAGE_VERSION));
 }
 
-#    if defined(FF_HAVE_EGL) || __has_include(<EGL/egl.h>)
-#        include "common/io.h"
+    #if defined(FF_HAVE_EGL) || __has_include(<EGL/egl.h>)
+        #include "common/io.h"
 
-#        define EGL_EGL_PROTOTYPES 1
-#        define EGL_EGLEXT_PROTOTYPES 1
-#        include <EGL/egl.h>
-#        include <EGL/eglext.h>
+        #define EGL_EGL_PROTOTYPES 1
+        #define EGL_EGLEXT_PROTOTYPES 1
+        #include <EGL/egl.h>
+        #include <EGL/eglext.h>
 
 typedef struct EGLData {
     FF_LIBRARY_SYMBOL(glGetString)
@@ -73,12 +73,12 @@ static const char* eglHandleContext(FFOpenGLResult* result, EGLData* data) {
 
 static const char* eglHandleSurface(FFOpenGLResult* result, EGLData* data, bool gles) {
     FF_DEBUG("Creating EGL context (preferred API=%s, client version=%d)", gles ? "OpenGL ES" : "OpenGL", gles ? 2 : 1);
-    data->context = data->ffeglCreateContext(data->display, data->config, EGL_NO_CONTEXT, (EGLint[]) {EGL_CONTEXT_CLIENT_VERSION, gles ? 2 : 1, // Try GLES 2.0+ first
-                                                                                              EGL_NONE});
+    data->context = data->ffeglCreateContext(data->display, data->config, EGL_NO_CONTEXT, (EGLint[]) { EGL_CONTEXT_CLIENT_VERSION, gles ? 2 : 1, // Try GLES 2.0+ first
+                                                                                              EGL_NONE });
     if (data->context == EGL_NO_CONTEXT && gles) // Some ANGLE builds support GLES 1.1 only
     {
         FF_DEBUG("EGL context creation with GLES 2.x failed, retrying with default attributes (GLES 1.1 fallback)");
-        data->context = data->ffeglCreateContext(data->display, data->config, EGL_NO_CONTEXT, (EGLint[]) {EGL_NONE});
+        data->context = data->ffeglCreateContext(data->display, data->config, EGL_NO_CONTEXT, (EGLint[]) { EGL_NONE });
     }
     if (data->context == EGL_NO_CONTEXT) {
         FF_DEBUG("eglCreateContext() returned EGL_NO_CONTEXT");
@@ -115,7 +115,7 @@ static const char* eglHandleDisplay(FFOpenGLResult* result, EGLData* data) {
     }
 
     FF_DEBUG("Creating EGL pbuffer surface (%dx%d)", FF_OPENGL_BUFFER_WIDTH, FF_OPENGL_BUFFER_HEIGHT);
-    data->surface = data->ffeglCreatePbufferSurface(data->display, data->config, (EGLint[]) {EGL_WIDTH, FF_OPENGL_BUFFER_WIDTH, EGL_HEIGHT, FF_OPENGL_BUFFER_HEIGHT, EGL_NONE});
+    data->surface = data->ffeglCreatePbufferSurface(data->display, data->config, (EGLint[]) { EGL_WIDTH, FF_OPENGL_BUFFER_WIDTH, EGL_HEIGHT, FF_OPENGL_BUFFER_HEIGHT, EGL_NONE });
 
     if (data->surface == EGL_NO_SURFACE) {
         FF_DEBUG("eglCreatePbufferSurface() returned EGL_NO_SURFACE");
@@ -140,7 +140,7 @@ static const char* eglHandleData(FFOpenGLResult* result, EGLData* data) {
         return "eglGetProcAddress(glGetString) returned NULL";
     }
 
-#        if EGL_VERSION_1_5
+        #if EGL_VERSION_1_5
     PFNEGLGETPLATFORMDISPLAYEXTPROC ffeglGetPlatformDisplay = (PFNEGLGETPLATFORMDISPLAYEXTPROC) data->ffeglGetProcAddress("eglGetPlatformDisplay");
     if (ffeglGetPlatformDisplay) {
         FF_DEBUG("Trying eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA)");
@@ -151,7 +151,7 @@ static const char* eglHandleData(FFOpenGLResult* result, EGLData* data) {
     }
 
     if (!ffeglGetPlatformDisplay || data->display == EGL_NO_DISPLAY)
-#        endif
+        #endif
 
     {
         FF_DEBUG("Trying eglGetDisplay(EGL_DEFAULT_DISPLAY)");
@@ -209,6 +209,6 @@ const char* ffOpenGLDetectByEGL(FFOpenGLResult* result) {
     return error;
 }
 
-#    endif // FF_HAVE_EGL
+    #endif // FF_HAVE_EGL
 
 #endif // FF_HAVE_NO_GL

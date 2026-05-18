@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <time.h>
 #ifdef _WIN32
-#    include <ntstatus.h>
-#    include "common/windows/nt.h"
-#    include <profileapi.h>
+    #include <ntstatus.h>
+    #include "common/windows/nt.h"
+    #include <profileapi.h>
 #elif defined(__HAIKU__)
-#    include <OS.h>
+    #include <OS.h>
 #endif
 
 #include "common/arrayUtils.h"
@@ -58,7 +58,7 @@ static inline bool ffTimeSleep(uint32_t msec) {
     interval.QuadPart = -(int64_t) msec * 10000; // Relative time in 100-nanosecond intervals
     return NT_SUCCESS(NtDelayExecution(TRUE, &interval));
 #else
-    return nanosleep(&(struct timespec) {msec / 1000, (long) (msec % 1000) * 1000000}, NULL) == 0;
+    return nanosleep(&(struct timespec) { msec / 1000, (long) (msec % 1000) * 1000000 }, NULL) == 0;
 #endif
 }
 

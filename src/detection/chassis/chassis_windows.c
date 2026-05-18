@@ -1,5 +1,5 @@
 #include "chassis.h"
-#include "common/smbiosHelper.h"
+#include "common/smbios.h"
 
 // 7.4
 typedef struct FFSmbiosSystemEnclosure {
@@ -24,7 +24,7 @@ typedef struct FFSmbiosSystemEnclosure {
     uint8_t ContainedElementCount; // varies
     uint8_t ContainedRecordLength; // varies
     uint8_t ContainedElements[];   // varies
-} __attribute__((__packed__)) FFSmbiosSystemEnclosure;
+} FF_A_PACKED FFSmbiosSystemEnclosure;
 
 static_assert(offsetof(FFSmbiosSystemEnclosure, ContainedElements) == 0x15,
     "FFSmbiosSystemEnclosure: Wrong struct alignment");

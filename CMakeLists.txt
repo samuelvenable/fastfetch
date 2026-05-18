@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12.0) # target_link_libraries with OBJECT libs & project homepage url
 
 project(fastfetch
-    VERSION 2.61.0
+    VERSION 2.63.1
     LANGUAGES C
     DESCRIPTION "Fast neofetch-like system information tool"
     HOMEPAGE_URL "https://github.com/fastfetch-cli/fastfetch"
@@ -77,6 +77,7 @@ cmake_dependent_option(ENABLE_DRM "Enable libdrm" ON "LINUX OR FreeBSD OR OpenBS
 cmake_dependent_option(ENABLE_DRM_AMDGPU "Enable libdrm_amdgpu" ON "LINUX OR FreeBSD OR GNU" OFF)
 cmake_dependent_option(ENABLE_GIO "Enable gio-2.0" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DCONF "Enable dconf" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
+cmake_dependent_option(ENABLE_EET "Enable eet" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DBUS "Enable dbus-1" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR Haiku OR GNU" OFF)
 cmake_dependent_option(ENABLE_SQLITE3 "Enable sqlite3" ON "LINUX OR FreeBSD OR APPLE OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_RPM "Enable rpm" ON "LINUX OR GNU" OFF)
@@ -104,6 +105,8 @@ option(INSTALL_LICENSE "Install license into /usr/share/licenses" ON)
 option(ENABLE_EMBEDDED_PCIIDS "Embed pci.ids into fastfetch, requires `python`" OFF)
 option(ENABLE_EMBEDDED_AMDGPUIDS "Embed amdgpu.ids into fastfetch, requires `python`" OFF)
 option(ENABLE_WORDEXP "Enable using of wordexp(3) if available, instead of glob(3)" ON)
+option(ENABLE_LUA "Enable lua scripting for format strings" ON)
+option(ENABLE_QUICKJS "Enable quickjs scripting for format strings" ON)
 option(ENABLE_LIBZFS "Enable libzfs" ON)
 if(WIN32 AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     option(ENABLE_WIN81_COMPAT "Enable legacy Windows compatibility (Windows 8.1 and later; Windows 7 unsupported)" ON)
@@ -119,7 +122,7 @@ if(NOT BINARY_LINK_TYPE IN_LIST BINARY_LINK_TYPE_OPTIONS)
     message(FATAL_ERROR "BINARY_LINK_TYPE must be one of ${BINARY_LINK_TYPE_OPTIONS}")
 endif()
 
-set(PACKAGE_MANAGERS AM APK BREW CHOCO DPKG EMERGE EOPKG FLATPAK GUIX LINGLONG LPKG LPKGBUILD MACPORTS NIX OPKG PACMAN PACSTALL PALUDIS PISI PKG PKGTOOL RPM SCOOP SNAP SOAR SORCERY WINGET XBPS)
+set(PACKAGE_MANAGERS AM APPIMAGE APK BREW CHOCO DPKG EMERGE EOPKG FLATPAK GUIX LINGLONG LPKG LPKGBUILD MACPORTS NIX OPKG PACMAN PACSTALL PALUDIS PISI PKG PKGTOOL RPM SCOOP SNAP SOAR SORCERY WINGET XBPS)
 foreach(package_manager ${PACKAGE_MANAGERS})
     if(package_manager STREQUAL "WINGET")
         option(PACKAGES_DISABLE_${package_manager} "Disable ${package_manager} package manager detection by default" ON)
@@ -160,7 +163,11 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} -Werror=incompatible-pointe
 
 if(WIN32 OR Haiku)
     enable_language(CXX)
-    set(CMAKE_CXX_STANDARD 17)
+    if(WIN32)
+        set(CMAKE_CXX_STANDARD 20)
+    else()
+        set(CMAKE_CXX_STANDARD 17)
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
 endif()
 
@@ -401,7 +408,7 @@ set(LIBFASTFETCH_SRC
     src/common/impl/FFstrbuf.c
     src/common/impl/path.c
     src/common/impl/FFPlatform.c
-    src/common/impl/smbiosHelper.c
+    src/common/impl/smbios.c
     src/detection/bluetoothradio/bluetoothradio.c
     src/detection/bootmgr/bootmgr.c
     src/detection/chassis/chassis.c
@@ -561,7 +568,7 @@ if(LINUX)
         src/detection/gpu/gpu_linux.c
         src/detection/gpu/gpu_drm.c
         src/detection/gpu/gpu_pci.c
-        src/detection/gpu/gpu_wsl.c
+        src/detection/gpu/gpu_windows.c
         src/detection/gtk_qt/gtk.c
         src/detection/host/host_linux.c
         src/detection/icons/icons_linux.c
@@ -793,7 +800,7 @@ elseif(NetBSD)
         src/detection/cursor/cursor_linux.c
         src/detection/disk/disk_bsd.c
         src/detection/dns/dns_linux.c
-        src/detection/physicaldisk/physicaldisk_nosupport.c
+        src/detection/physicaldisk/physicaldisk_nbsd.c
         src/detection/physicalmemory/physicalmemory_linux.c
         src/detection/diskio/diskio_nbsd.c
         src/detection/displayserver/linux/displayserver_linux.c
@@ -860,7 +867,7 @@ elseif(OpenBSD)
         src/common/impl/sysctl.c
         src/common/impl/FFPlatform_unix.c
         src/common/impl/binary_linux.c
-        src/common/impl/smbiosHelper.c
+        src/common/impl/smbios.c
         src/common/impl/kmod_nosupport.c
         src/detection/battery/battery_obsd.c
         src/detection/bios/bios_windows.c
@@ -877,7 +884,7 @@ elseif(OpenBSD)
         src/detection/cursor/cursor_linux.c
         src/detection/disk/disk_bsd.c
         src/detection/dns/dns_linux.c
-        src/detection/physicaldisk/physicaldisk_nosupport.c
+        src/detection/physicaldisk/physicaldisk_obsd.c
         src/detection/physicalmemory/physicalmemory_linux.c
         src/detection/diskio/diskio_obsd.c
         src/detection/displayserver/linux/displayserver_linux.c
@@ -1029,20 +1036,18 @@ elseif(WIN32)
         src/common/impl/debug_windows.c
         src/common/impl/kmod_windows.c
         src/common/windows/getline.c
-        src/common/windows/com.cpp
+        src/common/windows/com.c
         src/common/windows/registry.c
         src/common/windows/unicode.c
-        src/common/windows/wmi.cpp
         src/common/windows/variant.cpp
         src/common/windows/version.c
         src/detection/battery/battery_windows.c
         src/detection/bios/bios_windows.c
         src/detection/bluetooth/bluetooth_windows.c
-        src/detection/bluetooth/bluetooth_windows.cpp
         src/detection/bluetoothradio/bluetoothradio_windows.c
         src/detection/board/board_windows.c
         src/detection/bootmgr/bootmgr_windows.c
-        src/detection/brightness/brightness_windows.cpp
+        src/detection/brightness/brightness_windows.c
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_windows.c
         src/detection/cpu/cpu_windows.c
@@ -1067,7 +1072,7 @@ elseif(WIN32)
         src/detection/locale/locale_windows.c
         src/detection/localip/localip_windows.c
         src/detection/gamepad/gamepad_windows.c
-        src/detection/media/media_windows.c
+        src/detection/media/media_windows.cpp
         src/detection/memory/memory_windows.c
         src/detection/mouse/mouse_windows.c
         src/detection/physicalmemory/physicalmemory_linux.c
@@ -1238,7 +1243,7 @@ elseif(Haiku)
         src/detection/tpm/tpm_nosupport.c
         src/detection/uptime/uptime_haiku.c
         src/detection/users/users_linux.c
-        src/detection/wallpaper/wallpaper_nosupport.c
+        src/detection/wallpaper/wallpaper_haiku.cpp
         src/detection/wifi/wifi_nosupport.c
         src/detection/wm/wm_nosupport.c
         src/detection/de/de_nosupport.c
@@ -1334,6 +1339,14 @@ endif()
 if(WIN32)
     list(APPEND LIBFASTFETCH_SRC src/detection/gpu/gpu_intel.c)
     list(APPEND LIBFASTFETCH_SRC src/detection/gpu/gpu_amd.c)
+
+    include(CheckIncludeFileCXX)
+    CHECK_INCLUDE_FILE_CXX("winrt/Windows.Foundation.h" HAVE_WINRT)
+    if(HAVE_WINRT)
+        message(STATUS "WinRT headers are available, media detection will be enabled")
+    else()
+        message(WARNING "WinRT headers are NOT available, media detection will be disabled")
+    endif()
 endif()
 include(CheckFunctionExists)
 check_function_exists(wcwidth HAVE_WCWIDTH)
@@ -1436,7 +1449,7 @@ if(LINUX)
 elseif(ANDROID)
     target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE _XOPEN_SOURCE _FILE_OFFSET_BITS=64 "$<$<CONFIG:DEBUG>:__BIONIC_FORTIFY>" "$<$<CONFIG:DEBUG>:__BIONIC_FORTIFY_RUNTIME_CHECKS_ENABLED>")
 elseif(WIN32)
-    target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00 NOMINMAX UNICODE) # "$<$<CONFIG:Release>:_FORTIFY_SOURCE=3>"
+    target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE WIN32_LEAN_AND_MEAN WINRT_LEAN_AND_MEAN _WIN32_WINNT=0x0A00 NOMINMAX UNICODE) # "$<$<CONFIG:Release>:_FORTIFY_SOURCE=3>"
 elseif(APPLE)
     target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE _XOPEN_SOURCE __STDC_WANT_LIB_EXT1__ _FILE_OFFSET_BITS=64 _DARWIN_C_SOURCE)
 elseif(OpenBSD)
@@ -1544,9 +1557,16 @@ function(ff_lib_enable VARNAME PKGCONFIG_NAMES CMAKE_NAME)
         find_package(${CMAKE_NAME} QUIET)
 
         set(${VARNAME}_FOUND ${${CMAKE_NAME}_FOUND})
-        set(${VARNAME}_INCLUDE_DIRS ${${CMAKE_NAME}_INCLUDE_DIRS})
-        set(${VARNAME}_LIBRARIES ${${CMAKE_NAME}_LIBRARIES})
-        set(${VARNAME}_CFLAGS_OTHER ${${CMAKE_NAME}_CFLAGS_OTHER})
+        if(${VARNAME} STREQUAL "LUA")
+            # Lua is a special case since its CMake config does not follow the usual pattern
+            set(${VARNAME}_INCLUDE_DIRS ${LUA_INCLUDE_DIR})
+            set(${VARNAME}_LIBRARIES ${LUA_LIBRARY})
+            set(${VARNAME}_CFLAGS_OTHER "")
+        else()
+            set(${VARNAME}_INCLUDE_DIRS ${${CMAKE_NAME}_INCLUDE_DIRS})
+            set(${VARNAME}_LIBRARIES ${${CMAKE_NAME}_LIBRARIES})
+            set(${VARNAME}_CFLAGS_OTHER ${${CMAKE_NAME}_CFLAGS_OTHER})
+        endif()
     endif()
 
     if(NOT ${VARNAME}_FOUND)
@@ -1603,6 +1623,10 @@ ff_lib_enable(GIO
 ff_lib_enable(DCONF
     "dconf"
     "DConf"
+)
+ff_lib_enable(EET
+    "eet"
+    "Eet"
 )
 ff_lib_enable(DBUS
     "dbus-1"
@@ -1667,7 +1691,21 @@ ff_lib_enable(ELF
     "libelf"
     "libelf"
 )
-
+ff_lib_enable(LUA
+    "lua"
+    "Lua"
+)
+# https://github.com/quickjs-ng/quickjs/discussions/1493#discussioncomment-16955262
+# ff_lib_enable(QUICKJS
+#     "qjs"
+#     "qjs"
+# )
+if(ENABLE_QUICKJS)
+    CHECK_INCLUDE_FILE("quickjs.h" HAVE_QUICKJS)
+    if(HAVE_QUICKJS)
+        target_compile_definitions(libfastfetch PRIVATE FF_HAVE_QUICKJS=1)
+    endif()
+endif()
 if(ENABLE_THREADS)
     target_compile_definitions(libfastfetch PRIVATE FF_HAVE_THREADS=1)
     if(CMAKE_USE_PTHREADS_INIT) #Threads::Threads is not set for WIN32
@@ -1747,6 +1785,11 @@ elseif(WIN32)
             PRIVATE "mincore"
         )
     endif()
+    if(HAVE_WINRT)
+        target_link_libraries(libfastfetch
+            PRIVATE "runtimeobject"
+        )
+    endif()
 elseif(FreeBSD)
     target_link_libraries(libfastfetch
         PRIVATE "m"
@@ -1767,12 +1810,14 @@ elseif(OpenBSD)
         PRIVATE "m"
         PRIVATE "kvm"
         PRIVATE "sndio"
+        PRIVATE "util"
     )
 elseif(NetBSD)
     target_link_libraries(libfastfetch
         PRIVATE "bluetooth"
         PRIVATE "m"
         PRIVATE "prop"
+        PRIVATE "util"
     )
 elseif(SunOS)
     target_link_libraries(libfastfetch
@@ -1831,20 +1876,6 @@ target_link_libraries(libfastfetch
 target_compile_options(libfastfetch PRIVATE
     $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions -fno-rtti>)
 
-if(WIN32)
-    set(CMAKE_CXX_STANDARD 20)
-    include(CheckIncludeFileCXX)
-    CHECK_INCLUDE_FILE_CXX("winrt/Windows.Foundation.h" HAVE_WINRT)
-    if(HAVE_WINRT)
-        add_library(ffwinrt MODULE src/detection/media/media_windows.dll.cpp)
-        target_link_libraries(ffwinrt PRIVATE "RuntimeObject")
-        target_compile_definitions(ffwinrt PRIVATE WIN32_LEAN_AND_MEAN=1 WINRT_LEAN_AND_MEAN=1)
-        target_link_options(ffwinrt
-            PRIVATE "-static" # stdc++, winpthread, gcc_s, etc.
-        )
-    endif()
-    set(CMAKE_CXX_STANDARD 17)
-endif()
 if(FreeBSD)
     set(CMAKE_REQUIRED_INCLUDES "/usr/local/include" "/usr/include")
 endif()
@@ -1852,12 +1883,6 @@ if(LINUX OR FreeBSD OR OpenBSD OR NetBSD)
     CHECK_INCLUDE_FILE("linux/videodev2.h" HAVE_LINUX_VIDEODEV2)
     if(HAVE_LINUX_VIDEODEV2)
         target_compile_definitions(libfastfetch PRIVATE FF_HAVE_LINUX_VIDEODEV2=1)
-    endif()
-endif()
-if(LINUX)
-    CHECK_INCLUDE_FILE("linux/wireless.h" HAVE_LINUX_WIRELESS)
-    if(HAVE_LINUX_WIRELESS)
-        target_compile_definitions(libfastfetch PRIVATE FF_HAVE_LINUX_WIRELESS=1)
     endif()
 endif()
 if(NOT WIN32)
@@ -1891,6 +1916,8 @@ if(NOT WIN32)
             message(WARNING "pthread_timedjoin_np was not found; networking timeout will not work")
         endif()
     endif()
+elseif(HAVE_WINRT)
+    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_WINRT=1)
 endif()
 
 set(PACKAGES_DISABLE_LIST "")
@@ -2033,13 +2060,6 @@ install(
 if (TARGET flashfetch)
     install(
         TARGETS flashfetch
-        DESTINATION "${CMAKE_INSTALL_BINDIR}"
-    )
-endif()
-
-if (TARGET ffwinrt)
-    install(
-        TARGETS ffwinrt
         DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 endif()

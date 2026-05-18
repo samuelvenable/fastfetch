@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-const char* ffDetectBattery(FF_MAYBE_UNUSED FFBatteryOptions* options, FFlist* results) {
+const char* ffDetectBattery(FF_A_UNUSED FFBatteryOptions* options, FFlist* results) {
     FF_AUTO_CLOSE_FD int fd = open(_PATH_SYSMON, O_RDONLY | O_CLOEXEC);
     if (fd < 0) {
         return "open(_PATH_SYSMON, O_RDONLY | O_CLOEXEC) failed";
@@ -74,32 +74,30 @@ const char* ffDetectBattery(FF_MAYBE_UNUSED FFBatteryOptions* options, FFlist* r
         }
 
         if (max > 0) {
-            FFBatteryResult* battery = ffListAdd(results);
+            FFBatteryResult* battery = FF_LIST_ADD(FFBatteryResult, *results);
             battery->temperature = FF_BATTERY_TEMP_UNSET;
             battery->cycleCount = 0;
             ffStrbufInit(&battery->manufacturer);
             ffStrbufInit(&battery->modelName);
-            ffStrbufInit(&battery->status);
             ffStrbufInit(&battery->technology);
             ffStrbufInit(&battery->serial);
             ffStrbufInit(&battery->manufactureDate);
+            battery->status = FF_BATTERY_STATUS_NONE;
             battery->timeRemaining = -1;
 
             battery->capacity = (double) curr / (double) max * 100.;
             if (charging) {
-                ffStrbufAppendS(&battery->status, "Charging, ");
+                battery->status |= FF_BATTERY_STATUS_CHARGING;
             } else if (dischargeRate) {
-                ffStrbufAppendS(&battery->status, "Discharging, ");
+                battery->status |= FF_BATTERY_STATUS_DISCHARGING;
                 battery->timeRemaining = (int32_t) ((double) curr / dischargeRate * 3600);
             }
             if (critical) {
-                ffStrbufAppendS(&battery->status, "Critical, ");
+                battery->status |= FF_BATTERY_STATUS_CRITICAL;
             }
             if (acConnected) {
-                ffStrbufAppendS(&battery->status, "AC Connected");
+                battery->status |= FF_BATTERY_STATUS_AC_CONNECTED;
             }
-            ffStrbufTrimRight(&battery->status, ' ');
-            ffStrbufTrimRight(&battery->status, ',');
         }
 
         prop_object_iterator_release(iter);

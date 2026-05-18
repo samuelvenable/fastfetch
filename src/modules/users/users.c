@@ -8,7 +8,7 @@
 #pragma GCC diagnostic ignored "-Wformat" // warning: unknown conversion type character 'F' in format
 
 bool ffPrintUsers(FFUsersOptions* options) {
-    FF_LIST_AUTO_DESTROY users = ffListCreate(sizeof(FFUserResult));
+    FF_LIST_AUTO_DESTROY users = ffListCreate();
 
     const char* error = ffDetectUsers(options, &users);
 
@@ -76,7 +76,7 @@ bool ffPrintUsers(FFUsersOptions* options) {
                                                                                                                                                       FF_ARG(user->hostName, "host-name"),
                                                                                                                                                       FF_ARG(user->sessionName, "session-name"),
                                                                                                                                                       FF_ARG(user->clientIp, "client-ip"),
-                                                                                                                                                      {FF_ARG_TYPE_STRING, ffTimeToShortStr(user->loginTime), "login-time"},
+                                                                                                                                                      { FF_ARG_TYPE_STRING, ffTimeToShortStr(user->loginTime), "login-time" },
                                                                                                                                                       FF_ARG(days, "days"),
                                                                                                                                                       FF_ARG(hours, "hours"),
                                                                                                                                                       FF_ARG(minutes, "minutes"),
@@ -134,7 +134,7 @@ void ffGenerateUsersJsonConfig(FFUsersOptions* options, yyjson_mut_doc* doc, yyj
 }
 
 bool ffGenerateUsersJsonResult(FFUsersOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFUserResult));
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectUsers(options, &results);
 
@@ -181,7 +181,7 @@ void ffDestroyUsersOptions(FFUsersOptions* options) {
 
 FFModuleBaseInfo ffUsersModuleInfo = {
     .name = FF_USERS_MODULE_NAME,
-    .description = "Print users currently logged in",
+    .description = "Print users who are currently logged in",
     .initOptions = (void*) ffInitUsersOptions,
     .destroyOptions = (void*) ffDestroyUsersOptions,
     .parseJsonObject = (void*) ffParseUsersJsonObject,
@@ -189,17 +189,18 @@ FFModuleBaseInfo ffUsersModuleInfo = {
     .generateJsonResult = (void*) ffGenerateUsersJsonResult,
     .generateJsonConfig = (void*) ffGenerateUsersJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"User name", "name"},
-        {"Host name", "host-name"},
-        {"Session name", "session-name"},
-        {"Client IP", "client-ip"},
-        {"Login Time in local timezone", "login-time"},
-        {"Days after login", "days"},
-        {"Hours after login", "hours"},
-        {"Minutes after login", "minutes"},
-        {"Seconds after login", "seconds"},
-        {"Milliseconds after login", "milliseconds"},
-        {"Years integer after login", "years"},
-        {"Days of year after login", "days-of-year"},
-        {"Years fraction after login", "years-fraction"},
-    }))};
+        { "User name", "name" },
+        { "Host name", "host-name" },
+        { "Session name", "session-name" },
+        { "Client IP", "client-ip" },
+        { "Login Time in local timezone", "login-time" },
+        { "Days after login", "days" },
+        { "Hours after login", "hours" },
+        { "Minutes after login", "minutes" },
+        { "Seconds after login", "seconds" },
+        { "Milliseconds after login", "milliseconds" },
+        { "Years integer after login", "years" },
+        { "Days of year after login", "days-of-year" },
+        { "Years fraction after login", "years-fraction" },
+    }))
+};

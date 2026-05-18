@@ -1,3 +1,93 @@
+# 2.63.1
+
+Bugfixes:
+* Fixes media length detection for Chrome on Linux (Media, Linux)
+* Fixes segmentation fault when specifying unsupported modules on command line
+* Disables usage of Netlink for Wi-Fi detection on s390x architectures (Wifi, Linux)
+
+# 2.63.0
+
+Changes:
+* Introduces a new **build-only** dependency, `libefl`, for querying the Enlightenment window manager configuration:
+    * `libefl-all-dev` on Debian/Ubuntu
+    * `libefl-devel` on Fedora
+    * `efl` on Arch Linux
+* The Windows-specific options `battery.useSetupApi` and `global.wmiTimeout` have been removed. (Windows)
+
+Features:
+* Adds wallpaper detection support on Haiku (#2314, Wallpaper, Haiku)
+* Adds Wi-Fi 6 GHz channel detection and improves protocol reporting (Wifi, Linux)
+* Improves Deepin version detection using `/etc/os-version` (#2300, OS, Linux)
+* Adds Ubuntu Kylin and Ubuntu Unity flavor detection (OS, Linux)
+* Adds NebiDE support (WMTheme, Linux)
+* Adds package counting for `cards` on NuTyX (#2287, Packages, Linux)
+* Adds `{am-pm}` to custom format for 12-hour time with am/pm (DateTime)
+* Adds support for the Enlightenment desktop environment (#2165, WM, Linux)
+* Adds support for playback progress detection (Media)
+    * The module now prints the current playback position and total media duration when supported by the player. If you prefer the previous behavior, you can set `media.percent.type: ["hide-others"]` to hide the new fields.
+* Adds support for `global.playerName` for Windows (Media, Windows)
+    * This allows detecting a specified media player while ignoring others.
+* Multi-battery detection is enabled on Windows by default (Battery, Windows)
+
+Bugfixes:
+* Improves DisplayServer compatibility on Linux by handling newer `kde-output-device-v2` protocol updates (DisplayServer, Linux)
+    * This fixes a long-standing issue where display detection fails with an `interface 'kde_output_device_mode_v2' has no event X` error.
+* Improves Wi-Fi reliability on Linux by switching to a netlink implementation (Wifi, Linux)
+* Improves network interface reliability and default route selection on macOS and Windows (Netif, macOS / Windows)
+* Validates temperature color thresholds as integers when parsing JSON configs (Temps)
+* Fixes TDE Konsole version detection (#2319, Terminal, Linux)
+* Various internal cleanups and optimizations
+
+Logos:
+* Adds KibaOS, NebiOS, XJ380, openRuyi, Ximper
+* Fixes GNOME OS built-in logo detection (#2296)
+
+# 2.62.1
+
+Bugfixes:
+* Fixes the Host module not working on some devices (#2279, Host, Linux)
+    * Regression from v2.61.0
+
+Logos:
+* Adds EN-OS, LimeOS, Redrose and Uzbek
+
+# 2.62.0
+
+Changes:
+* Sort package managers alphabetically in output and format arguments (Packages)
+    * The positional order of format arguments has changed — this is a breaking change for users relying on numeric placeholders. Named arguments are always preferred; e.g., use `{pacman}` (refer to `fastfetch -h packages-format`) instead of `{1}` to keep your config future-proof.
+
+Features:
+* Reports `Unused` instead of `Disabled` for zero-size swap on macOS (#2248, Swap, macOS)
+* Improves the robustness of default route detection on Linux (#2252, LocalIP, Linux)
+* PhysicalDisk module improvements
+    * Detects virtual disks and adds support for hiding them via `hideVirtual` option (defaults to `false`)
+    * Detects unused/disconnected disks and adds support for hiding them via `hideUnused` option (defaults to `true`)
+    * Adds support for OpenBSD and NetBSD (root privileges are required to access disk information)
+    * Improves interconnect type detection on SunOS
+    * Adds floppy drive support on Windows
+* Rewrites Windows GPU detection with D3DKMT APIs, unifying it with WSL GPU detection (GPU, Windows)
+* Verifies that the battery and power adapter are present before detection (Battery / PowerAdapter, Linux)
+* Improves PhysicalMemory reliability on OpenBSD and FreeBSD, including support for x86 UEFI systems on OpenBSD and non-UEFI systems on FreeBSD (PhysicalMemory, OpenBSD / FreeBSD)
+* Adds `display.common.(ndigits|spaceBeforeUnit)` options to configure common formatting for duration, percent, size, frequency and temperature values (#2234)
+* Slightly improves performance by skipping probes for ignored device types (Sound)
+* Adds support for AppImage package detection (#2179, Packages, Linux)
+
+Bugfixes:
+* Fixes a potential crash on certain Intel GPU models when using `--gpu-driver-specific` (#2259, GPU, Linux)
+* Doesn't report partitions as physical disks (DiskIO, NetBSD)
+* Fixes a typo (#2260, Wifi, macOS)
+* Corrects documentation for zpool format placeholders (#2261, Zpool)
+* Restores Windows 8.1 support (Cursor, Windows)
+* Fixes an out-of-bounds memory access when swaps are disabled (Swap, Windows)
+* Fixes battery status being incorrectly reported as `Charging` on systems with multiple batteries (#2263, Battery, Linux)
+* Fixes ash shell version detection (#2271, Shell, Linux)
+* Uses the `iterm` image protocol automatically on iTerm terminals for auto logo type (Logo)
+* Adds missing options when generating full config file
+
+Logos:
+* Updates AerynOS (#2272)
+
 # 2.61.0
 
 Changes:

@@ -52,7 +52,7 @@ void ffGenerateTerminalJsonConfig(FFTerminalOptions* options, yyjson_mut_doc* do
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateTerminalJsonResult(FF_MAYBE_UNUSED FFTerminalOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateTerminalJsonResult(FF_A_UNUSED FFTerminalOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     const FFTerminalResult* result = ffDetectTerminal();
 
     if (result->processName.length == 0) {
@@ -84,7 +84,7 @@ void ffDestroyTerminalOptions(FFTerminalOptions* options) {
 
 FFModuleBaseInfo ffTerminalModuleInfo = {
     .name = FF_TERMINAL_MODULE_NAME,
-    .description = "Print current terminal name and version",
+    .description = "Print the current terminal name and version",
     .initOptions = (void*) ffInitTerminalOptions,
     .destroyOptions = (void*) ffDestroyTerminalOptions,
     .parseJsonObject = (void*) ffParseTerminalJsonObject,
@@ -92,12 +92,13 @@ FFModuleBaseInfo ffTerminalModuleInfo = {
     .generateJsonResult = (void*) ffGenerateTerminalJsonResult,
     .generateJsonConfig = (void*) ffGenerateTerminalJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Terminal process name", "process-name"},
-        {"The first argument of the command line when running the terminal", "exe"},
-        {"Terminal base name of arg0", "exe-name"},
-        {"Terminal pid", "pid"},
-        {"Terminal pretty name", "pretty-name"},
-        {"Terminal version", "version"},
-        {"Terminal full exe path", "exe-path"},
-        {"Terminal tty / pts used", "tty"},
-    }))};
+        { "Terminal process name", "process-name" },
+        { "The first argument of the command line when running the terminal", "exe" },
+        { "Terminal base name of arg0", "exe-name" },
+        { "Terminal pid", "pid" },
+        { "Terminal pretty name", "pretty-name" },
+        { "Terminal version", "version" },
+        { "Terminal full exe path", "exe-path" },
+        { "Terminal tty / pts used", "tty" },
+    }))
+};

@@ -63,7 +63,7 @@ typedef struct _PROCESS_DEVICEMAP_INFORMATION_EX {
 } PROCESS_DEVICEMAP_INFORMATION_EX, *PPROCESS_DEVICEMAP_INFORMATION_EX;
 
 #ifndef NtCurrentProcess
-#    define NtCurrentProcess() ((HANDLE) (LONG_PTR) - 1)
+    #define NtCurrentProcess() ((HANDLE) (LONG_PTR) - 1)
 #endif
 
 typedef struct _CURDIR {
@@ -602,7 +602,15 @@ typedef struct _KUSER_SHARED_DATA {
     // ... more fields follow, but we don't need them
 } KUSER_SHARED_DATA, *PKUSER_SHARED_DATA;
 
-#define SharedUserData ((const KUSER_SHARED_DATA*) 0x7FFE0000UL)
+#ifdef __aarch64__
+    #define SharedUserData ({                                                                        \
+        __auto_type shared_user_data = (const volatile KUSER_SHARED_DATA*) (uintptr_t) 0x7FFE0000UL; \
+        __asm__("" : "+r"(shared_user_data)); /* https://github.com/lhmouse/mcfgthread/issues/330 */ \
+        shared_user_data;                                                                            \
+    })
+#else
+    #define SharedUserData ((const volatile KUSER_SHARED_DATA*) (uintptr_t) 0x7FFE0000UL)
+#endif
 
 static inline uint64_t ffKSystemTimeToUInt64(const volatile KSYSTEM_TIME* pTime) {
 #if _WIN64
@@ -616,9 +624,9 @@ static inline uint64_t ffKSystemTimeToUInt64(const volatile KSYSTEM_TIME* pTime)
     uint32_t low, high1, high2;
 
     do {
-        high1 = pTime->High1Time;
-        low = pTime->LowPart;
-        high2 = pTime->High2Time;
+        high1 = (uint32_t) pTime->High1Time;
+        low = (uint32_t) pTime->LowPart;
+        high2 = (uint32_t) pTime->High2Time;
     } while (high1 != high2);
 
     return ((uint64_t) high1 << 32) | low;
@@ -634,7 +642,8 @@ static inline bool ffIsWindows10OrGreater() {
 }
 
 static inline bool ffIsWindows11OrGreater() {
-    return ffIsWindows10OrGreater() && SharedUserData->NtBuildNumber >= 22000;
+    return SharedUserData->NtMajorVersion > 10 ||
+        (SharedUserData->NtMajorVersion == 10 && SharedUserData->NtBuildNumber >= 22000);
 }
 
 NTSYSAPI NTSTATUS NTAPI NtOpenProcessToken(

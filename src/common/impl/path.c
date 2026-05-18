@@ -9,17 +9,17 @@ const char* ffFindExecutableInPath(const char* name, FFstrbuf* result) {
         return "$PATH not set";
     }
 
-#    ifdef _WIN32
+    #ifdef _WIN32
     const bool appendExe = !ffStrEndsWithIgnCase(name, ".exe");
-#    endif
+    #endif
 
     for (char* token = path; *token; path = token + 1) {
         token = strchr(path,
-#    ifdef _WIN32
+    #ifdef _WIN32
             ';'
-#    else
+    #else
             ':'
-#    endif
+    #endif
         );
         if (!token) {
             token = path + strlen(path);
@@ -27,25 +27,25 @@ const char* ffFindExecutableInPath(const char* name, FFstrbuf* result) {
 
         ffStrbufSetNS(result, (uint32_t) (token - path), path);
         ffStrbufEnsureEndsWithC(result,
-#    ifdef _WIN32
+    #ifdef _WIN32
             '\\'
-#    else
+    #else
             '/'
-#    endif
+    #endif
         );
         ffStrbufAppendS(result, name);
-#    ifdef _WIN32
+    #ifdef _WIN32
         if (appendExe) {
             ffStrbufAppendS(result, ".exe");
         }
         if (!ffPathExists(result->chars, FF_PATHTYPE_FILE)) {
             continue;
         }
-#    else
+    #else
         if (access(result->chars, X_OK) != 0) {
             continue;
         }
-#    endif
+    #endif
 
         return NULL;
     }
@@ -53,10 +53,10 @@ const char* ffFindExecutableInPath(const char* name, FFstrbuf* result) {
     return "Executable not found";
 }
 #else
-#    include <windows.h>
-#    include <winioctl.h>
-#    include <errno.h>
-#    include <stdalign.h>
+    #include <windows.h>
+    #include <winioctl.h>
+    #include <errno.h>
+    #include <stdalign.h>
 
 const char* ffFindExecutableInPath(const char* name, FFstrbuf* result) {
     char buffer[MAX_PATH + 1];
@@ -128,13 +128,6 @@ char* frealpath(HANDLE hFile, char* resolved_name) {
             errno = E2BIG;
             return NULL;
         }
-
-        if (outBytes > MAX_PATH) {
-            errno = E2BIG;
-            return NULL;
-        }
-
-        return resolved_name;
     } else {
         /* UTF-8 worst-case: up to 4 bytes per UTF-16 code unit */
         char tmp[(MAX_PATH + 4) * 4];
@@ -152,7 +145,6 @@ char* frealpath(HANDLE hFile, char* resolved_name) {
         }
 
         memcpy(resolved_name, tmp, outBytes);
-        return resolved_name;
     }
 
     return resolved_name;

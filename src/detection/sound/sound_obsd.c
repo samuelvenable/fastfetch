@@ -56,8 +56,8 @@ static void enumerate_props(FFSoundDeviceBundle* bundle, struct sioctl_desc* des
     }
 }
 
-const char* ffDetectSound(FFlist* devices) {
-    __attribute__((__cleanup__(close_hdl))) struct sioctl_hdl* hdl = sioctl_open(SIO_DEVANY, SIOCTL_READ, 0);
+const char* ffDetectSound(FFSoundOptions* options, FFlist* devices) {
+    FF_A_CLEANUP(close_hdl) struct sioctl_hdl* hdl = sioctl_open(SIO_DEVANY, SIOCTL_READ, 0);
     if (!hdl) {
         return "sio_open() failed";
     }
@@ -71,13 +71,12 @@ const char* ffDetectSound(FFlist* devices) {
         return "Unexpected sioctl_ondesc() result";
     }
 
-    FFSoundDevice* device = ffListAdd(devices);
+    FFSoundDevice* device = FF_LIST_ADD(FFSoundDevice, *devices);
     ffStrbufInitS(&device->name, bundle.name);
     ffStrbufInitS(&device->identifier, SIO_DEVANY);
     ffStrbufInitStatic(&device->platformApi, "sndio");
-    device->active = true;
-    device->main = true;
     device->volume = 0;
+    device->type = FF_SOUND_TYPE_ACTIVE | FF_SOUND_TYPE_MAIN;
 
     double totalLevel = 0;
     for (uint8_t i = 0; i < bundle.iLevel; ++i) {

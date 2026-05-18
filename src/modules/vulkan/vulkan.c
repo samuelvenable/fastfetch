@@ -62,7 +62,7 @@ void ffGenerateVulkanJsonConfig(FFVulkanOptions* options, yyjson_mut_doc* doc, y
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateVulkanJsonResult(FF_MAYBE_UNUSED FFVulkanOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateVulkanJsonResult(FF_A_UNUSED FFVulkanOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     const FFVulkanResult* result = ffDetectVulkan();
 
     if (result->error) {
@@ -133,7 +133,7 @@ void ffDestroyVulkanOptions(FFVulkanOptions* options) {
 
 FFModuleBaseInfo ffVulkanModuleInfo = {
     .name = FF_VULKAN_MODULE_NAME,
-    .description = "Print highest Vulkan version supported by the GPU",
+    .description = "Print the highest Vulkan version supported by the GPU",
     .initOptions = (void*) ffInitVulkanOptions,
     .destroyOptions = (void*) ffDestroyVulkanOptions,
     .parseJsonObject = (void*) ffParseVulkanJsonObject,
@@ -141,8 +141,9 @@ FFModuleBaseInfo ffVulkanModuleInfo = {
     .generateJsonResult = (void*) ffGenerateVulkanJsonResult,
     .generateJsonConfig = (void*) ffGenerateVulkanJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Driver name", "driver"},
-        {"API version", "api-version"},
-        {"Conformance version", "conformance-version"},
-        {"Instance version", "instance-version"},
-    }))};
+        { "Driver name", "driver" },
+        { "API version", "api-version" },
+        { "Conformance version", "conformance-version" },
+        { "Instance version", "instance-version" },
+    }))
+};

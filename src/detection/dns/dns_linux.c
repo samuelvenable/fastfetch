@@ -6,9 +6,9 @@
 #include "common/debug.h"
 
 #ifdef __HAIKU__
-#    define RESOLV_CONF "/system/settings/network/resolv.conf"
+    #define RESOLV_CONF "/system/settings/network/resolv.conf"
 #else
-#    define RESOLV_CONF "/etc/resolv.conf"
+    #define RESOLV_CONF "/etc/resolv.conf"
 #endif
 
 static const char* detectDnsFromConf(const char* path, FFDNSOptions* options, FFlist* results) {
@@ -51,7 +51,7 @@ static const char* detectDnsFromConf(const char* path, FFDNSOptions* options, FF
                 continue;
             }
 
-            FFstrbuf* item = (FFstrbuf*) ffListAdd(results);
+            FFstrbuf* item = FF_LIST_ADD(FFstrbuf, *results);
             ffStrbufInitS(item, nameserver);
             ffStrbufTrimRightSpace(item);
             FF_DEBUG("Found DNS server: %s", item->chars);

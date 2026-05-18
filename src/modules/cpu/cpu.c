@@ -150,6 +150,8 @@ void ffGenerateCPUJsonConfig(FFCPUOptions* options, yyjson_mut_doc* doc, yyjson_
     ffTempsGenerateJsonConfig(doc, module, options->temp, options->tempConfig);
 
     yyjson_mut_obj_add_bool(doc, module, "showPeCoreCount", options->showPeCoreCount);
+
+    yyjson_mut_obj_add_strbuf(doc, module, "tempSensor", &options->tempSensor);
 }
 
 bool ffGenerateCPUJsonResult(FFCPUOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
@@ -225,7 +227,7 @@ void ffInitCPUOptions(FFCPUOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "");
     ffStrbufInit(&options->tempSensor);
     options->temp = false;
-    options->tempConfig = (FFColorRangeConfig) {60, 80};
+    options->tempConfig = (FFColorRangeConfig) { 60, 80 };
     options->showPeCoreCount = false;
 }
 
@@ -236,7 +238,7 @@ void ffDestroyCPUOptions(FFCPUOptions* options) {
 
 FFModuleBaseInfo ffCPUModuleInfo = {
     .name = FF_CPU_MODULE_NAME,
-    .description = "Print CPU name, frequency, etc",
+    .description = "Print CPU name, frequency, etc.",
     .initOptions = (void*) ffInitCPUOptions,
     .destroyOptions = (void*) ffDestroyCPUOptions,
     .parseJsonObject = (void*) ffParseCPUJsonObject,
@@ -244,16 +246,17 @@ FFModuleBaseInfo ffCPUModuleInfo = {
     .generateJsonResult = (void*) ffGenerateCPUJsonResult,
     .generateJsonConfig = (void*) ffGenerateCPUJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Name", "name"},
-        {"Vendor", "vendor"},
-        {"Physical core count", "cores-physical"},
-        {"Logical core count", "cores-logical"},
-        {"Online core count", "cores-online"},
-        {"Base frequency (formatted)", "freq-base"},
-        {"Max frequency (formatted)", "freq-max"},
-        {"Temperature (formatted)", "temperature"},
-        {"Logical core count grouped by frequency", "core-types"},
-        {"Processor package count", "packages"},
-        {"CPU microarchitecture", "march"},
-        {"NUMA node count", "numa-nodes"},
-    }))};
+        { "Name", "name" },
+        { "Vendor", "vendor" },
+        { "Physical core count", "cores-physical" },
+        { "Logical core count", "cores-logical" },
+        { "Online core count", "cores-online" },
+        { "Base frequency (formatted)", "freq-base" },
+        { "Max frequency (formatted)", "freq-max" },
+        { "Temperature (formatted)", "temperature" },
+        { "Logical core count grouped by frequency", "core-types" },
+        { "Processor package count", "packages" },
+        { "CPU microarchitecture", "march" },
+        { "NUMA node count", "numa-nodes" },
+    }))
+};

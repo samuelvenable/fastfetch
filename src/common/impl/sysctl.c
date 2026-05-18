@@ -5,16 +5,17 @@
 #ifdef __OpenBSD__
 const char* ffSysctlGetString(int mib1, int mib2, FFstrbuf* result) {
     size_t neededLength;
-    if (sysctl((int[]) {mib1, mib2}, 2, NULL, &neededLength, NULL, 0) != 0 || neededLength == 1) { // neededLength is 1 for empty strings, because of the null terminator
-        return "sysctlbyname() failed";
+    if (sysctl((int[]) { mib1, mib2 }, 2, NULL, &neededLength, NULL, 0) != 0 || neededLength == 1) { // neededLength is 1 for empty strings, because of the null terminator
+        return "sysctl() length query failed";
     }
 
     ffStrbufEnsureFree(result, (uint32_t) neededLength - 1);
 
-    if (sysctl((int[]) {mib1, mib2}, 2, result->chars + result->length, &neededLength, NULL, 0) == 0) {
-        result->length += (uint32_t) neededLength - 1;
+    if (sysctl((int[]) { mib1, mib2 }, 2, result->chars + result->length, &neededLength, NULL, 0) != 0) {
+        return "sysctl() failed to retrieve string data";
     }
 
+    result->length += (uint32_t) neededLength - 1;
     result->chars[result->length] = '\0';
 
     return NULL;
@@ -23,7 +24,7 @@ const char* ffSysctlGetString(int mib1, int mib2, FFstrbuf* result) {
 int ffSysctlGetInt(int mib1, int mib2, int defaultValue) {
     int result;
     size_t neededLength = sizeof(result);
-    if (sysctl((int[]) {mib1, mib2}, 2, &result, &neededLength, NULL, 0) != 0) {
+    if (sysctl((int[]) { mib1, mib2 }, 2, &result, &neededLength, NULL, 0) != 0) {
         return defaultValue;
     }
     return result;
@@ -32,7 +33,7 @@ int ffSysctlGetInt(int mib1, int mib2, int defaultValue) {
 int64_t ffSysctlGetInt64(int mib1, int mib2, int64_t defaultValue) {
     int64_t result;
     size_t neededLength = sizeof(result);
-    if (sysctl((int[]) {mib1, mib2}, 2, &result, &neededLength, NULL, 0) != 0) {
+    if (sysctl((int[]) { mib1, mib2 }, 2, &result, &neededLength, NULL, 0) != 0) {
         return defaultValue;
     }
     return result;
@@ -46,9 +47,11 @@ const char* ffSysctlGetString(const char* propName, FFstrbuf* result) {
 
     ffStrbufEnsureFree(result, (uint32_t) neededLength - 1);
 
-    if (sysctlbyname(propName, result->chars + result->length, &neededLength, NULL, 0) == 0) {
-        result->length += (uint32_t) neededLength - 1;
+    if (sysctlbyname(propName, result->chars + result->length, &neededLength, NULL, 0) != 0) {
+        return "sysctlbyname() failed to retrieve string data";
     }
+
+    result->length += (uint32_t) neededLength - 1;
 
     result->chars[result->length] = '\0';
 
@@ -80,9 +83,6 @@ void* ffSysctlGetData(int* request, u_int requestLength, size_t* resultLength) {
     }
 
     void* data = malloc(*resultLength);
-    if (data == NULL) {
-        return NULL;
-    }
 
     if (sysctl(request, requestLength, data, resultLength, NULL, 0) != 0) {
         free(data);

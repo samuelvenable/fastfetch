@@ -2,17 +2,17 @@
 
 #if __has_include(<libgeom.h>)
 
-#    include "common/stringUtils.h"
+    #include "common/stringUtils.h"
 
-#    include <devstat.h>
-#    include <memory.h>
-#    include <fcntl.h>
-#    include <sys/ioctl.h>
-#    include <sys/disk.h>
-#    include <libgeom.h>
+    #include <devstat.h>
+    #include <memory.h>
+    #include <fcntl.h>
+    #include <sys/ioctl.h>
+    #include <sys/disk.h>
+    #include <libgeom.h>
 
 const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
-    __attribute__((__cleanup__(geom_deletetree))) struct gmesh geomTree = {};
+    FF_A_CLEANUP(geom_deletetree) struct gmesh geomTree = {};
     if (geom_gettree(&geomTree) < 0) {
         return "geom_gettree() failed";
     }
@@ -57,7 +57,7 @@ const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
             continue;
         }
 
-        FFDiskIOResult* device = (FFDiskIOResult*) ffListAdd(result);
+        FFDiskIOResult* device = FF_LIST_ADD(FFDiskIOResult, *result);
         ffStrbufInitF(&device->devPath, "/dev/%s", provider->lg_name);
         device->bytesRead = snapIter->bytes[DEVSTAT_READ];
         device->readCount = snapIter->operations[DEVSTAT_READ];
@@ -74,8 +74,8 @@ const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
 
 #else
 
-#    include <devstat.h>
-#    include <memory.h>
+    #include <devstat.h>
+    #include <memory.h>
 
 const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
     if (checkversion() < 0) {
@@ -102,7 +102,7 @@ const char* ffDiskIOGetIoCounters(FFlist* result, FFDiskIOOptions* options) {
             continue;
         }
 
-        FFDiskIOResult* device = (FFDiskIOResult*) ffListAdd(result);
+        FFDiskIOResult* device = FF_LIST_ADD(FFDiskIOResult, *result);
         ffStrbufInitS(&device->name, deviceName);
         ffStrbufInitF(&device->devPath, "/dev/%s", deviceName);
         device->bytesRead = current->bytes_read;

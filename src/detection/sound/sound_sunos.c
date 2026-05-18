@@ -5,13 +5,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #if __has_include(<sys/soundcard.h>)
-#    include <sys/soundcard.h>
+    #include <sys/soundcard.h>
 #else
-// Strangely, they don't provide this file on default installation
-#    include "audio_oss_sunos.h"
+    // Strangely, they don't provide this file on default installation
+    #include "audio_oss_sunos.h"
 #endif
 
-const char* ffDetectSound(FFlist* devices) {
+const char* ffDetectSound(FFSoundOptions* options, FFlist* devices) {
     int defaultDev;
     {
         char mixerp[12];
@@ -29,10 +29,15 @@ const char* ffDetectSound(FFlist* devices) {
 
     FF_STRBUF_AUTO_DESTROY sndstat = ffStrbufCreate();
 
-    struct oss_sysinfo info = {.nummixers = 9};
+    struct oss_sysinfo info = { .nummixers = 9 };
 
     // The implementation is very different from *BSD's. They call it OSS4
     for (int idev = 0; idev < info.nummixers; ++idev) {
+        bool isMain = idev == defaultDev;
+        if ((options->soundType & FF_SOUND_TYPE_MAIN) && !isMain) {
+            continue;
+        }
+
         path[strlen("/dev/mixer")] = (char) ('0' + idev);
         FF_AUTO_CLOSE_FD int fd = open(path, O_RDWR | O_CLOEXEC);
         if (fd < 0) {
@@ -53,14 +58,18 @@ const char* ffDetectSound(FFlist* devices) {
             continue;
         }
 
+        if (options->soundType == FF_SOUND_TYPE_ACTIVE && !mi.enabled) {
+            continue;
+        }
+
         int volume = -1;
         for (int iext = 0; iext < mi.nrext; ++iext) {
-            struct oss_mixext me = {.dev = mi.dev, .ctrl = iext};
+            struct oss_mixext me = { .dev = mi.dev, .ctrl = iext };
             if (ioctl(fd, SNDCTL_MIX_EXTINFO, &me) < 0) {
                 continue;
             }
             if (me.flags & MIXF_PCMVOL) {
-                struct oss_mixer_value mv = {.dev = mi.dev, .ctrl = iext, .timestamp = me.timestamp};
+                struct oss_mixer_value mv = { .dev = mi.dev, .ctrl = iext, .timestamp = me.timestamp };
                 if (ioctl(fd, SNDCTL_MIX_READ, &mv) >= 0) {
                     mv.value -= me.minvalue;
                     me.maxvalue -= me.minvalue;
@@ -73,7 +82,7 @@ const char* ffDetectSound(FFlist* devices) {
             continue;
         }
 
-        FFSoundDevice* device = ffListAdd(devices);
+        FFSoundDevice* device = FF_LIST_ADD(FFSoundDevice, *devices);
         ffStrbufInitS(&device->identifier, path);
         char buf[16];
         int bufLen = snprintf(buf, ARRAY_SIZE(buf), "\n%d: ", mi.dev);
@@ -92,8 +101,8 @@ const char* ffDetectSound(FFlist* devices) {
         ffStrbufTrimRightSpace(&device->name);
         ffStrbufInitF(&device->platformApi, "%s %s", info.product, info.version);
         device->volume = (uint8_t) volume;
-        device->active = !!mi.enabled;
-        device->main = defaultDev == idev;
+        device->type = (mi.enabled ? FF_SOUND_TYPE_ACTIVE : FF_SOUND_TYPE_NONE) |
+            (isMain ? FF_SOUND_TYPE_MAIN : FF_SOUND_TYPE_NONE);
     }
 
     return NULL;

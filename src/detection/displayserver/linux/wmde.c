@@ -9,18 +9,18 @@
 #include <unistd.h>
 
 #if __FreeBSD__
-#    include <sys/sysctl.h>
-#    include <sys/types.h>
-#    include <sys/user.h>
+    #include <sys/sysctl.h>
+    #include <sys/types.h>
+    #include <sys/user.h>
 #elif __OpenBSD__
-#    include <sys/param.h>
-#    include <sys/sysctl.h>
-#    include <kvm.h>
+    #include <sys/param.h>
+    #include <sys/sysctl.h>
+    #include <kvm.h>
 #elif __sun
-#    include <procfs.h>
+    #include <procfs.h>
 #elif __NetBSD__
-#    include <sys/types.h>
-#    include <sys/sysctl.h>
+    #include <sys/types.h>
+    #include <sys/sysctl.h>
 #endif
 
 static const char* parseEnv(void) {
@@ -267,17 +267,22 @@ static void applyPrettyNameIfDE(FFDisplayServerResult* result, const char* name)
         ffStrbufSetS(&result->deProcessName, "unity-session");
         ffStrbufSetS(&result->dePrettyName, FF_DE_PRETTY_UNITY);
     }
+
+    else if (ffStrEqualsIgnCase(name, "Enlightenment")) {
+        ffStrbufSetS(&result->deProcessName, "enlightenment_start");
+        ffStrbufSetS(&result->dePrettyName, FF_DE_PRETTY_ENLIGHTENMENT);
+    }
 }
 
 static const char* getFromProcesses(FFDisplayServerResult* result) {
     uint32_t userId = instance.state.platform.uid;
 
 #if __FreeBSD__
-#    ifdef __DragonFly__
-#        define ki_comm kp_comm
-#    endif
+    #ifdef __DragonFly__
+        #define ki_comm kp_comm
+    #endif
 
-    int request[] = {CTL_KERN, KERN_PROC, KERN_PROC_UID, (int) userId};
+    int request[] = { CTL_KERN, KERN_PROC, KERN_PROC_UID, (int) userId };
     size_t length = 0;
 
     if (sysctl(request, ARRAY_SIZE(request), NULL, &length, NULL, 0) != 0) {
@@ -420,7 +425,7 @@ static const char* getFromProcesses(FFDisplayServerResult* result) {
         }
     }
 #elif __NetBSD__
-    int request[] = {CTL_KERN, KERN_PROC2, KERN_PROC_UID, (int) userId, sizeof(struct kinfo_proc2), INT_MAX};
+    int request[] = { CTL_KERN, KERN_PROC2, KERN_PROC_UID, (int) userId, sizeof(struct kinfo_proc2), INT_MAX };
 
     size_t size = 0;
     if (sysctl(request, ARRAY_SIZE(request), NULL, &size, NULL, 0) != 0) {

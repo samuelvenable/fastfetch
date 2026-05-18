@@ -17,11 +17,11 @@ static inline void wrapYyjsonFree(yyjson_doc** doc) {
 static const char* parseTermuxApi(FFBatteryOptions* options, FFlist* results) {
     FF_STRBUF_AUTO_DESTROY buffer = ffStrbufCreate();
 
-    if (ffProcessAppendStdOut(&buffer, (char* const[]) {FF_TERMUX_API_PATH, FF_TERMUX_API_PARAM, NULL})) {
+    if (ffProcessAppendStdOut(&buffer, (char* const[]) { FF_TERMUX_API_PATH, FF_TERMUX_API_PARAM, NULL })) {
         return "Starting `" FF_TERMUX_API_PATH " " FF_TERMUX_API_PARAM "` failed";
     }
 
-    yyjson_doc* __attribute__((__cleanup__(wrapYyjsonFree))) doc = yyjson_read_opts(buffer.chars, buffer.length, 0, NULL, NULL);
+    yyjson_doc* FF_A_CLEANUP(wrapYyjsonFree) doc = yyjson_read_opts(buffer.chars, buffer.length, 0, NULL, NULL);
     if (!doc) {
         return "Failed to parse battery info";
     }
@@ -31,13 +31,13 @@ static const char* parseTermuxApi(FFBatteryOptions* options, FFlist* results) {
         return "Battery info result is not a JSON object";
     }
 
-    FFBatteryResult* battery = ffListAdd(results);
+    FFBatteryResult* battery = FF_LIST_ADD(FFBatteryResult, *results);
     battery->temperature = FF_BATTERY_TEMP_UNSET;
     battery->cycleCount = 0;
     battery->timeRemaining = -1;
+    battery->status = FF_BATTERY_STATUS_NONE;
     ffStrbufInit(&battery->manufacturer);
     ffStrbufInit(&battery->modelName);
-    ffStrbufInit(&battery->status);
     ffStrbufInit(&battery->technology);
     ffStrbufInit(&battery->serial);
     ffStrbufInit(&battery->manufactureDate);
@@ -46,23 +46,21 @@ static const char* parseTermuxApi(FFBatteryOptions* options, FFlist* results) {
     const char* acStatus = yyjson_get_str(yyjson_obj_get(root, "plugged"));
     if (acStatus) {
         if (ffStrEquals(acStatus, "PLUGGED_AC")) {
-            ffStrbufAppendS(&battery->status, "AC Connected, ");
+            battery->status |= FF_BATTERY_STATUS_AC_CONNECTED;
         } else if (ffStrEquals(acStatus, "PLUGGED_USB")) {
-            ffStrbufAppendS(&battery->status, "USB Connected, ");
+            battery->status |= FF_BATTERY_STATUS_USB_CONNECTED;
         } else if (ffStrEquals(acStatus, "PLUGGED_WIRELESS")) {
-            ffStrbufAppendS(&battery->status, "Wireless Connected, ");
+            battery->status |= FF_BATTERY_STATUS_WIRELESS_CONNECTED;
         }
     }
     const char* status = yyjson_get_str(yyjson_obj_get(root, "status"));
     if (status) {
         if (ffStrEquals(status, "CHARGING")) {
-            ffStrbufAppendS(&battery->status, "Charging");
+            battery->status |= FF_BATTERY_STATUS_CHARGING;
         } else if (ffStrEquals(status, "DISCHARGING")) {
-            ffStrbufAppendS(&battery->status, "Discharging");
+            battery->status |= FF_BATTERY_STATUS_DISCHARGING;
         }
     }
-    ffStrbufTrimRight(&battery->status, ' ');
-    ffStrbufTrimRight(&battery->status, ',');
 
     if (options->temp) {
         battery->temperature = yyjson_get_num(yyjson_obj_get(root, "temperature"));
@@ -94,36 +92,30 @@ static const char* parseDumpsys(FFBatteryOptions* options, FFlist* results) {
     }
     ffStrbufClear(&temp);
 
-    FFBatteryResult* battery = ffListAdd(results);
+    FFBatteryResult* battery = FF_LIST_ADD(FFBatteryResult, *results);
     battery->temperature = FF_BATTERY_TEMP_UNSET;
     battery->cycleCount = 0;
     battery->timeRemaining = -1;
     battery->capacity = 0;
+    battery->status = FF_BATTERY_STATUS_NONE;
     ffStrbufInit(&battery->manufacturer);
     ffStrbufInit(&battery->modelName);
-    ffStrbufInit(&battery->status);
     ffStrbufInit(&battery->technology);
     ffStrbufInit(&battery->serial);
     ffStrbufInit(&battery->manufactureDate);
 
     if (ffParsePropLines(start, "AC powered: ", &temp) && ffStrbufEqualS(&temp, "true")) {
-        ffStrbufAppendS(&battery->status, "AC powered");
+        battery->status |= FF_BATTERY_STATUS_AC_CONNECTED;
     }
     ffStrbufClear(&temp);
 
     if (ffParsePropLines(start, "USB powered: ", &temp) && ffStrbufEqualS(&temp, "true")) {
-        if (battery->status.length) {
-            ffStrbufAppendS(&battery->status, ", ");
-        }
-        ffStrbufAppendS(&battery->status, "USB powered");
+        battery->status |= FF_BATTERY_STATUS_USB_CONNECTED;
     }
     ffStrbufClear(&temp);
 
     if (ffParsePropLines(start, "Wireless powered: ", &temp) && ffStrbufEqualS(&temp, "true")) {
-        if (battery->status.length) {
-            ffStrbufAppendS(&battery->status, ", ");
-        }
-        ffStrbufAppendS(&battery->status, "Wireless powered");
+        battery->status |= FF_BATTERY_STATUS_WIRELESS_CONNECTED;
     }
     ffStrbufClear(&temp);
 

@@ -12,7 +12,7 @@ void ffFontInit(FFfont* font) {
     ffStrbufInit(&font->pretty);
     ffStrbufInit(&font->name);
     ffStrbufInit(&font->size);
-    ffListInit(&font->styles, sizeof(FFstrbuf));
+    ffListInit(&font->styles);
 }
 
 static void strbufAppendNSExcludingC(FFstrbuf* strbuf, uint32_t length, const char* value, char exclude) {
@@ -93,7 +93,7 @@ void ffFontInitQt(FFfont* font, const char* data) {
     data++;
     if (isalpha(*data)) {
         do {
-            FFstrbuf* style = (FFstrbuf*) ffListAdd(&font->styles);
+            FFstrbuf* style = FF_LIST_ADD(FFstrbuf, font->styles);
             ffStrbufInit(style);
             data = ffStrbufAppendSUntilC(style, data, ' ');
             if (data) {
@@ -152,7 +152,7 @@ static void fontPangoParseWord(const char** data, FFfont* font, FFstrbuf* altern
         ffStrStartsWithIgnCase(wordStart, "Condensed") ||
         ffStrStartsWithIgnCase(wordStart, "Expanded")) {
         if (alternativeBuffer == NULL) {
-            alternativeBuffer = (FFstrbuf*) ffListAdd(&font->styles);
+            alternativeBuffer = FF_LIST_ADD(FFstrbuf, font->styles);
             ffStrbufInit(alternativeBuffer);
         }
 
@@ -271,7 +271,7 @@ void ffFontInitXlfd(FFfont* font, const char* xlfd) {
             {
                 // ignore "normal" (case-insensitive)
                 if (!(length == 6 && ffStrStartsWithIgnCase(pstart, "normal"))) {
-                    FFstrbuf* style = (FFstrbuf*) ffListAdd(&font->styles);
+                    FFstrbuf* style = FF_LIST_ADD(FFstrbuf, font->styles);
                     ffStrbufInitNS(style, length, pstart);
                 }
             }
@@ -425,10 +425,11 @@ void ffFontInitXft(FFfont* font, const char* xft) {
         if (value.length > 0) {
             if (
                 (keyLen == 4 && ffStrStartsWithIgnCase(keyStart, "size")) ||
-                (keyLen == 9 && ffStrStartsWithIgnCase(keyStart, "pixelsize"))) {
+                (keyLen == 9 && (ffStrStartsWithIgnCase(keyStart, "pixelsize") || ffStrStartsWithIgnCase(keyStart, "pointsize")))) {
                 if (sizeEmpty && ffCharIsDigit(value.chars[0])) {
                     ffStrbufAppend(&font->size, &value);
-                    ffStrbufAppendS(&font->size, keyLen == 4 ? "pt" : "px");
+                    ffStrbufAppendS(&font->size,
+                        (keyLen == 9 && ffStrStartsWithIgnCase(keyStart, "pixelsize")) ? "px" : "pt");
                 }
             } else if (keyLen == 5 && ffStrStartsWithIgnCase(keyStart, "style")) {
                 // style may contain multiple words: "Bold Italic"
@@ -457,6 +458,10 @@ void ffFontInitXft(FFfont* font, const char* xft) {
                 ffStrbufInit(style);
                 strbufAppendNSExcludingC(style, value.length, value.chars, '-');
                 ffStrbufTrim(style, ' ');
+                if (style->length == 0) {
+                    ffStrbufDestroy(style);
+                    --font->styles.length;
+                }
             }
         }
     }

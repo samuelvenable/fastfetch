@@ -56,7 +56,7 @@ void ffGenerateVersionJsonConfig(FFVersionOptions* options, yyjson_mut_doc* doc,
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateVersionJsonResult(FF_MAYBE_UNUSED FFVersionOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateVersionJsonResult(FF_A_UNUSED FFVersionOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFVersionResult* result = &ffVersionResult;
 
     yyjson_mut_val* obj = yyjson_mut_obj_add_obj(doc, module, "result");
@@ -95,7 +95,7 @@ void ffDestroyVersionOptions(FFVersionOptions* options) {
 
 FFModuleBaseInfo ffVersionModuleInfo = {
     .name = FF_VERSION_MODULE_NAME,
-    .description = "Print Fastfetch version",
+    .description = "Print the Fastfetch version and build information",
     .initOptions = (void*) ffInitVersionOptions,
     .destroyOptions = (void*) ffDestroyVersionOptions,
     .parseJsonObject = (void*) ffParseVersionJsonObject,
@@ -103,14 +103,15 @@ FFModuleBaseInfo ffVersionModuleInfo = {
     .generateJsonResult = (void*) ffGenerateVersionJsonResult,
     .generateJsonConfig = (void*) ffGenerateVersionJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Project name", "project-name"},
-        {"Version", "version"},
-        {"Version tweak", "version-tweak"},
-        {"Build type (debug or release)", "build-type"},
-        {"System name", "sysname"},
-        {"Architecture", "arch"},
-        {"CMake build type when compiling (Debug, Release, RelWithDebInfo, MinSizeRel)", "cmake-built-type"},
-        {"Date time when compiling", "compile-time"},
-        {"Compiler used when compiling", "compiler"},
-        {"Libc used when compiling", "libc"},
-    }))};
+        { "Project name", "project-name" },
+        { "Version", "version" },
+        { "Version tweak", "version-tweak" },
+        { "Build type (debug or release)", "build-type" },
+        { "System name", "sysname" },
+        { "Architecture", "arch" },
+        { "CMake build type when compiling (Debug, Release, RelWithDebInfo, MinSizeRel)", "cmake-built-type" },
+        { "Date time when compiling", "compile-time" },
+        { "Compiler used when compiling", "compiler" },
+        { "Libc used when compiling", "libc" },
+    }))
+};

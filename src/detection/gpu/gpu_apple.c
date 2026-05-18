@@ -48,9 +48,9 @@ static double detectGpuTemp(const FFstrbuf* gpuName) {
 }
 
 #ifdef __aarch64__
-#    include "common/apple/cf_helpers.h"
+    #include "common/apple/cf_helpers.h"
 
-#    include <IOKit/IOKitLib.h>
+    #include <IOKit/IOKitLib.h>
 
 static const char* detectFrequency(FFGPUResult* gpu) {
     // https://github.com/giampaolo/psutil/pull/2222/files
@@ -112,7 +112,7 @@ const char* ffDetectGPUImpl(const FFGPUOptions* options, FFlist* gpus) {
             continue;
         }
 
-        FFGPUResult* gpu = ffListAdd(gpus);
+        FFGPUResult* gpu = FF_LIST_ADD(FFGPUResult, *gpus);
         gpu->index = FF_GPU_INDEX_UNSET;
         ffStrbufInit(&gpu->memoryType);
         gpu->dedicated.total = gpu->dedicated.used = gpu->shared.total = gpu->shared.used = FF_GPU_VMEM_SIZE_UNSET;

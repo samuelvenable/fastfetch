@@ -12,17 +12,18 @@
 #include <paths.h>
 
 #ifdef __APPLE__
-#    include <mach-o/dyld.h>
-#    include <sys/sysctl.h>
+    #include <mach-o/dyld.h>
+    #include <sys/sysctl.h>
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
-#    include <sys/sysctl.h>
+    #include <sys/sysctl.h>
 #elif defined(__OpenBSD__)
-#    include <sys/sysctl.h>
-#    include <kvm.h>
-#    include "common/path.h"
+    #include <sys/sysctl.h>
+    #include <sys/stat.h>
+    #include <kvm.h>
+    #include "common/path.h"
 #elif defined(__HAIKU__)
-#    include <image.h>
-#    include <OS.h>
+    #include <image.h>
+    #include <OS.h>
 #endif
 
 static void getExePath(FFPlatform* platform) {
@@ -42,16 +43,16 @@ static void getExePath(FFPlatform* platform) {
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
     size_t exePathLen = sizeof(exePath);
     if (sysctl(
-            (int[]) {CTL_KERN,
-#    ifdef __FreeBSD__
+            (int[]) { CTL_KERN,
+    #ifdef __FreeBSD__
                 KERN_PROC,
                 KERN_PROC_PATHNAME,
                 (pid_t) platform->pid
-#    else
+    #else
                 KERN_PROC_ARGS,
-                platform->pid,
+                (pid_t) platform->pid,
                 KERN_PROC_PATHNAME
-#    endif
+    #endif
             },
             4,
             exePath,
@@ -97,7 +98,7 @@ static void getExePath(FFPlatform* platform) {
                         struct stat st;
                         if (stat(exePath, &st) == 0 && S_ISREG(st.st_mode)) {
                             int cntp;
-                            struct kinfo_file* kf = kvm_getfiles(kd, KERN_FILE_BYPID, platform->pid, sizeof(*kf), &cntp);
+                            struct kinfo_file* kf = kvm_getfiles(kd, KERN_FILE_BYPID, (pid_t) platform->pid, sizeof(*kf), &cntp);
                             if (kf) {
                                 int i;
                                 for (i = 0; i < cntp; i++) {
@@ -281,7 +282,7 @@ static void getSysinfo(FFPlatformSysinfo* info, const struct utsname* uts) {
 
 #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__NetBSD__)
     size_t length = sizeof(info->pageSize);
-    sysctl((int[]) {CTL_HW, HW_PAGESIZE}, 2, &info->pageSize, &length, NULL, 0);
+    sysctl((int[]) { CTL_HW, HW_PAGESIZE }, 2, &info->pageSize, &length, NULL, 0);
 #else
     info->pageSize = (uint32_t) sysconf(_SC_PAGESIZE);
 #endif

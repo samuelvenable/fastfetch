@@ -5,7 +5,7 @@
 #include "modules/wifi/wifi.h"
 
 bool ffPrintWifi(FFWifiOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFWifiResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
 
     const char* error = ffDetectWifi(&result);
     if (error) {
@@ -27,8 +27,7 @@ bool ffPrintWifi(FFWifiOptions* options) {
         char bandStr[8];
         if (item->conn.frequency > 58000) {
             strcpy(bandStr, "60");
-        }
-        if (item->conn.frequency > 40000) {
+        } else if (item->conn.frequency > 40000) {
             strcpy(bandStr, "45");
         } else if (item->conn.frequency > 5900) {
             strcpy(bandStr, "6");
@@ -149,8 +148,8 @@ void ffGenerateWifiJsonConfig(FFWifiOptions* options, yyjson_mut_doc* doc, yyjso
     ffPercentGenerateJsonConfig(doc, module, options->percent);
 }
 
-bool ffGenerateWifiJsonResult(FF_MAYBE_UNUSED FFWifiOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFWifiResult));
+bool ffGenerateWifiJsonResult(FF_A_UNUSED FFWifiOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectWifi(&result);
     if (error) {
         yyjson_mut_obj_add_str(doc, module, "error", error);
@@ -206,7 +205,7 @@ bool ffGenerateWifiJsonResult(FF_MAYBE_UNUSED FFWifiOptions* options, yyjson_mut
 void ffInitWifiOptions(FFWifiOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "");
 
-    options->percent = (FFPercentageModuleConfig) {75, 50, 0};
+    options->percent = (FFPercentageModuleConfig) { 75, 50, 0 };
 }
 
 void ffDestroyWifiOptions(FFWifiOptions* options) {
@@ -223,17 +222,18 @@ FFModuleBaseInfo ffWifiModuleInfo = {
     .generateJsonResult = (void*) ffGenerateWifiJsonResult,
     .generateJsonConfig = (void*) ffGenerateWifiJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Interface description", "inf-desc"},
-        {"Interface status", "inf-status"},
-        {"Connection status", "status"},
-        {"Connection SSID", "ssid"},
-        {"Connection BSSID", "bssid"},
-        {"Connection protocol", "protocol"},
-        {"Connection signal quality (percentage num)", "signal-quality"},
-        {"Connection RX rate", "rx-rate"},
-        {"Connection TX rate", "tx-rate"},
-        {"Connection Security algorithm", "security"},
-        {"Connection signal quality (percentage bar)", "signal-quality-bar"},
-        {"Connection channel number", "channel"},
-        {"Connection channel band in GHz", "band"},
-    }))};
+        { "Interface description", "inf-desc" },
+        { "Interface status", "inf-status" },
+        { "Connection status", "status" },
+        { "Connection SSID", "ssid" },
+        { "Connection BSSID", "bssid" },
+        { "Connection protocol", "protocol" },
+        { "Connection signal quality (percentage num)", "signal-quality" },
+        { "Connection RX rate", "rx-rate" },
+        { "Connection TX rate", "tx-rate" },
+        { "Connection Security algorithm", "security" },
+        { "Connection signal quality (percentage bar)", "signal-quality-bar" },
+        { "Connection channel number", "channel" },
+        { "Connection channel band in GHz", "band" },
+    }))
+};

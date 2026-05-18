@@ -1,5 +1,5 @@
 #include "cpucache.h"
-#include "common/smbiosHelper.h"
+#include "common/smbios.h"
 #include "common/stringUtils.h"
 
 typedef struct FFSmbiosCacheInfo {
@@ -21,7 +21,7 @@ typedef struct FFSmbiosCacheInfo {
     // 3.1+
     uint32_t MaximumCacheSize2;   // bit field
     uint32_t InstalledCacheSize2; // bit field
-} __attribute__((__packed__)) FFSmbiosCacheInfo;
+} FF_A_PACKED FFSmbiosCacheInfo;
 
 static_assert(offsetof(FFSmbiosCacheInfo, InstalledCacheSize2) == 0x17,
     "FFSmbiosCacheInfo: Wrong struct alignment");

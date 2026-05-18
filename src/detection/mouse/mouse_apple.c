@@ -6,7 +6,7 @@
 #include <IOKit/hid/IOHIDLib.h>
 
 static void enumSet(IOHIDDeviceRef value, FFlist* results) {
-    FFMouseDevice* device = (FFMouseDevice*) ffListAdd(results);
+    FFMouseDevice* device = FF_LIST_ADD(FFMouseDevice, *results);
     ffStrbufInit(&device->serial);
     ffStrbufInit(&device->name);
 
@@ -23,7 +23,7 @@ const char* ffDetectMouse(FFlist* devices /* List of FFMouseDevice */) {
         return "IOHIDManagerOpen() failed";
     }
 
-    CFDictionaryRef FF_CFTYPE_AUTO_RELEASE matching1 = CFDictionaryCreate(kCFAllocatorDefault, (const void**) (CFStringRef[]) {CFSTR(kIOHIDDeviceUsagePageKey), CFSTR(kIOHIDDeviceUsageKey)}, (const void**) (CFNumberRef[]) {ffCfCreateInt(kHIDPage_GenericDesktop), ffCfCreateInt(kHIDUsage_GD_Mouse)}, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    CFDictionaryRef FF_CFTYPE_AUTO_RELEASE matching1 = CFDictionaryCreate(kCFAllocatorDefault, (const void**) (CFStringRef[]) { CFSTR(kIOHIDDeviceUsagePageKey), CFSTR(kIOHIDDeviceUsageKey) }, (const void**) (CFNumberRef[]) { ffCfCreateInt(kHIDPage_GenericDesktop), ffCfCreateInt(kHIDUsage_GD_Mouse) }, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     IOHIDManagerSetDeviceMatching(manager, matching1);
 
     CFSetRef FF_CFTYPE_AUTO_RELEASE set = IOHIDManagerCopyDevices(manager);

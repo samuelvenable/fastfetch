@@ -98,7 +98,7 @@ void ffGenerateMonitorJsonConfig(FFMonitorOptions* options, yyjson_mut_doc* doc,
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateMonitorJsonResult(FF_MAYBE_UNUSED FFMonitorOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateMonitorJsonResult(FF_A_UNUSED FFMonitorOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     yyjson_mut_obj_add_str(doc, module, "error", "Monitor module is an alias of Display module");
     return false;
 }
@@ -121,16 +121,17 @@ FFModuleBaseInfo ffMonitorModuleInfo = {
     .generateJsonResult = (void*) ffGenerateMonitorJsonResult,
     .generateJsonConfig = (void*) ffGenerateMonitorJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Display name", "name"},
-        {"Native resolution width in pixels", "width"},
-        {"Native resolution height in pixels", "height"},
-        {"Physical width in millimeters", "physical-width"},
-        {"Physical height in millimeters", "physical-height"},
-        {"Physical diagonal length in inches", "inch"},
-        {"Pixels per inch (PPI)", "ppi"},
-        {"Year of manufacturing", "manufacture-year"},
-        {"Nth week of manufacturing in the year", "manufacture-week"},
-        {"Serial number", "serial"},
-        {"Maximum refresh rate in Hz", "refresh-rate"},
-        {"True if the display is HDR compatible", "hdr-compatible"},
-    }))};
+        { "Display name", "name" },
+        { "Native resolution width in pixels", "width" },
+        { "Native resolution height in pixels", "height" },
+        { "Physical width in millimeters", "physical-width" },
+        { "Physical height in millimeters", "physical-height" },
+        { "Physical diagonal length in inches", "inch" },
+        { "Pixels per inch (PPI)", "ppi" },
+        { "Year of manufacturing", "manufacture-year" },
+        { "Nth week of manufacturing in the year", "manufacture-week" },
+        { "Serial number", "serial" },
+        { "Maximum refresh rate in Hz", "refresh-rate" },
+        { "True if the display is HDR compatible", "hdr-compatible" },
+    }))
+};

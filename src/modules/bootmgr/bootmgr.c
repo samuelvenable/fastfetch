@@ -67,7 +67,7 @@ void ffGenerateBootmgrJsonConfig(FFBootmgrOptions* options, yyjson_mut_doc* doc,
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateBootmgrJsonResult(FF_MAYBE_UNUSED FFBootmgrOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateBootmgrJsonResult(FF_A_UNUSED FFBootmgrOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     bool success = false;
     FFBootmgrResult bootmgr = {
         .name = ffStrbufCreate(),
@@ -104,7 +104,7 @@ void ffDestroyBootmgrOptions(FFBootmgrOptions* options) {
 
 FFModuleBaseInfo ffBootmgrModuleInfo = {
     .name = FF_BOOTMGR_MODULE_NAME,
-    .description = "Print information of 2nd-stage bootloader (name, firmware, etc)",
+    .description = "Print second-stage bootloader information (name, firmware, etc.)",
     .initOptions = (void*) ffInitBootmgrOptions,
     .destroyOptions = (void*) ffDestroyBootmgrOptions,
     .parseJsonObject = (void*) ffParseBootmgrJsonObject,
@@ -112,9 +112,10 @@ FFModuleBaseInfo ffBootmgrModuleInfo = {
     .generateJsonResult = (void*) ffGenerateBootmgrJsonResult,
     .generateJsonConfig = (void*) ffGenerateBootmgrJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Name / description", "name"},
-        {"Firmware file path", "firmware-path"},
-        {"Firmware file name", "firmware-name"},
-        {"Is secure boot enabled", "secure-boot"},
-        {"Boot order", "order"},
-    }))};
+        { "Name / description", "name" },
+        { "Firmware file path", "firmware-path" },
+        { "Firmware file name", "firmware-name" },
+        { "Is secure boot enabled", "secure-boot" },
+        { "Boot order", "order" },
+    }))
+};

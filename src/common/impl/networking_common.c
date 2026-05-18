@@ -5,7 +5,7 @@
 #include "common/debug.h"
 
 #ifdef FF_HAVE_ZLIB
-#    include <zlib.h>
+    #include <zlib.h>
 
 struct FFZlibLibrary {
     FF_LIBRARY_SYMBOL(inflateInit2_)
@@ -19,11 +19,11 @@ const char* ffNetworkingLoadZlibLibrary(void) {
     if (!zlibData.inited) {
         zlibData.inited = true;
         FF_LIBRARY_LOAD_MESSAGE(zlib,
-#    ifdef _WIN32
+    #ifdef _WIN32
             "zlib1"
-#    else
+    #else
             "libz"
-#    endif
+    #endif
             FF_LIBRARY_EXTENSION,
             2)
         FF_LIBRARY_LOAD_SYMBOL_VAR_MESSAGE(zlib, zlibData, inflateInit2_)
@@ -146,16 +146,24 @@ bool ffNetworkingDecompressGzip(FFstrbuf* buffer, char* headerEnd) {
         result = zlibData.ffinflate(&zs, Z_FINISH);
     }
 
+    // Check for decompression errors before using result
+    if (result != Z_STREAM_END) {
+        FF_DEBUG("Decompression failed with zlib error: %d", result);
+        zlibData.ffinflateEnd(&zs);
+        return false;
+    }
+
     zlibData.ffinflateEnd(&zs);
 
-    // Calculate decompressed size
+    // Calculate decompressed size (from the last inflate call)
     uint32_t decompressedSize = (uint32_t) (availableOut - zs.avail_out);
     decompressedBuffer.length += decompressedSize;
     decompressedBuffer.chars[decompressedBuffer.length] = '\0';
     FF_DEBUG("Successfully decompressed %u bytes compressed data to %u bytes", compressedSize, decompressedBuffer.length);
 
     // Modify Content-Length header and remove Content-Encoding header
-    FF_STRBUF_AUTO_DESTROY newBuffer = ffStrbufCreateA(headerSize + decompressedSize + 64);
+    // Use decompressedBuffer.length (total) not decompressedSize (last chunk only)
+    FF_STRBUF_AUTO_DESTROY newBuffer = ffStrbufCreateA(headerSize + decompressedBuffer.length + 64);
 
     char* line = NULL;
     size_t len = 0;

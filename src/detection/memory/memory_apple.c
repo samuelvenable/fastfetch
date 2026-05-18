@@ -13,7 +13,7 @@ const char* ffDetectMemory(FFMemoryResult* ram) {
         return "Failed to read hw.memsize_usable";
     }
 #else
-    if (sysctl((int[]) {CTL_HW, HW_MEMSIZE}, 2, &ram->bytesTotal, &length, NULL, 0) != 0) {
+    if (sysctl((int[]) { CTL_HW, HW_MEMSIZE }, 2, &ram->bytesTotal, &length, NULL, 0) != 0) {
         return "Failed to read hw.memsize";
     }
 #endif
@@ -25,10 +25,10 @@ const char* ffDetectMemory(FFMemoryResult* ram) {
     }
 
     // Match what the OS-provided top(1) command does: https://github.com/apple-oss-distributions/top/blob/1e3b6cace1cbca04536cf325da9adc7389a27e8f/globalstats.c#L486-L488
-    ram->bytesUsed = ((uint64_t)vmstat.wire_count + vmstat.inactive_count + vmstat.active_count + vmstat.compressor_page_count) * instance.state.platform.sysinfo.pageSize;
+    ram->bytesUsed = ((uint64_t) vmstat.wire_count + vmstat.inactive_count + vmstat.active_count + vmstat.compressor_page_count) * instance.state.platform.sysinfo.pageSize;
 
     // Match what Activity Monitor does: https://github.com/apple-oss-distributions/system_cmds/blob/e0c267e80e451b9441ec4f4bb05dd72f0b49d596/vm_stat/vm_stat.c#L131
-    ram->bytesUsed = ram->bytesTotal - ((uint64_t)(vmstat.free_count - vmstat.speculative_count) + vmstat.external_page_count) * instance.state.platform.sysinfo.pageSize;
+    ram->bytesUsed = ram->bytesTotal - ((uint64_t) (vmstat.free_count - vmstat.speculative_count) + vmstat.external_page_count) * instance.state.platform.sysinfo.pageSize;
     // Comment out the above line to use top(1)'s method of getting memory used instead of Activity Monitor's method.
 
     return NULL;

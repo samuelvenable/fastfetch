@@ -27,14 +27,39 @@ static double detectNvmeTemp(int devfd) {
 }
 
 static void parsePhysicalDisk(int dfd, const char* devName, FFPhysicalDiskOptions* options, FFlist* result) {
+    uint64_t size = 0;
+
+    {
+        char blkSize[32];
+        ssize_t fileSize = ffReadFileDataRelative(dfd, "size", ARRAY_SIZE(blkSize) - 1, blkSize);
+        if (fileSize > 0) {
+            blkSize[fileSize] = 0;
+            size = (uint64_t) strtoul(blkSize, NULL, 10) * 512;
+        }
+    }
+
+    FFPhysicalDiskType type = FF_PHYSICALDISK_TYPE_NONE;
+    if (size == 0) {
+        if (options->hideType & FF_PHYSICALDISK_TYPE_UNUSED) {
+            return;
+        }
+
+        type |= FF_PHYSICALDISK_TYPE_UNUSED;
+    }
+
     int devfd = openat(dfd, "device", O_RDONLY | O_CLOEXEC | O_PATH | O_DIRECTORY);
+
     if (devfd < 0) {
-        return; // virtual device
+        if (options->hideType & FF_PHYSICALDISK_TYPE_VIRTUAL) {
+            return;
+        }
+
+        type |= FF_PHYSICALDISK_TYPE_VIRTUAL;
     }
 
     FF_STRBUF_AUTO_DESTROY name = ffStrbufCreate();
 
-    {
+    if (devfd > 0) {
         if (ffAppendFileBufferRelative(devfd, "vendor", &name)) {
             ffStrbufTrimRightSpace(&name);
             if (name.length > 0) {
@@ -68,23 +93,26 @@ static void parsePhysicalDisk(int dfd, const char* devName, FFPhysicalDiskOption
         if (options->namePrefix.length && !ffStrbufStartsWith(&name, &options->namePrefix)) {
             return;
         }
+    } else {
+        ffStrbufSetS(&name, devName);
     }
 
-    FFPhysicalDiskResult* device = (FFPhysicalDiskResult*) ffListAdd(result);
-    device->type = FF_PHYSICALDISK_TYPE_NONE;
+    FFPhysicalDiskResult* device = FF_LIST_ADD(FFPhysicalDiskResult, *result);
     ffStrbufInitMove(&device->name, &name);
     ffStrbufInitF(&device->devPath, "/dev/%s", devName);
+    ffStrbufInit(&device->serial);
+    ffStrbufInit(&device->revision);
+    ffStrbufInit(&device->interconnect);
+    device->type = type;
+    device->size = size;
+    device->temperature = FF_PHYSICALDISK_TEMP_UNSET;
 
-    bool isVirtual = false;
-    {
-        ffStrbufInit(&device->interconnect);
+    bool isVirtio = false;
+    if (devfd > 0) {
         if (ffStrStartsWith(devName, "nvme")) {
             ffStrbufSetStatic(&device->interconnect, "NVMe");
         } else if (ffStrStartsWith(devName, "mmcblk")) {
             ffStrbufSetStatic(&device->interconnect, "MMC");
-        } else if (ffStrStartsWith(devName, "md")) {
-            ffStrbufSetStatic(&device->interconnect, "RAID");
-            isVirtual = true;
         } else {
             char pathSysDeviceLink[64];
             snprintf(pathSysDeviceLink, ARRAY_SIZE(pathSysDeviceLink), "/sys/block/%s/device", devName);
@@ -99,8 +127,8 @@ static void parsePhysicalDisk(int dfd, const char* devName, FFPhysicalDiskOption
                 } else if (strstr(pathSysDeviceReal, "/nvme") != NULL) {
                     ffStrbufSetStatic(&device->interconnect, "NVMe");
                 } else if (strstr(pathSysDeviceReal, "/virtio") != NULL) {
-                    ffStrbufSetStatic(&device->interconnect, "Virtual");
-                    isVirtual = true;
+                    ffStrbufSetStatic(&device->interconnect, "VirtIO");
+                    isVirtio = true; // VirtIO devices are virtual, but we still want to report it
                 } else {
                     if (ffAppendFileBufferRelative(devfd, "transport", &device->interconnect)) {
                         ffStrbufTrimRightSpace(&device->interconnect);
@@ -108,23 +136,27 @@ static void parsePhysicalDisk(int dfd, const char* devName, FFPhysicalDiskOption
                 }
             }
         }
+    } else {
+        ffStrbufSetStatic(&device->interconnect, "Virtual");
     }
 
-    if (!isVirtual) {
+    if (devfd > 0 && !isVirtio) {
         char isRotationalChar = '1';
         if (ffReadFileDataRelative(dfd, "queue/rotational", 1, &isRotationalChar) > 0) {
             device->type |= isRotationalChar == '1' ? FF_PHYSICALDISK_TYPE_HDD : FF_PHYSICALDISK_TYPE_SSD;
         }
-    }
 
-    {
-        char blkSize[32];
-        ssize_t fileSize = ffReadFileDataRelative(dfd, "size", ARRAY_SIZE(blkSize) - 1, blkSize);
-        if (fileSize > 0) {
-            blkSize[fileSize] = 0;
-            device->size = (uint64_t) strtoul(blkSize, NULL, 10) * 512;
-        } else {
-            device->size = 0;
+        if (ffReadFileBufferRelative(devfd, "serial", &device->serial)) {
+            ffStrbufTrimSpace(&device->serial);
+        }
+
+        if (ffReadFileBufferRelative(devfd, "firmware_rev", &device->revision) ||
+            ffReadFileBufferRelative(devfd, "rev", &device->revision)) {
+            ffStrbufTrimRightSpace(&device->revision);
+        }
+
+        if (options->temp) {
+            device->temperature = detectNvmeTemp(devfd);
         }
     }
 
@@ -140,30 +172,6 @@ static void parsePhysicalDisk(int dfd, const char* devName, FFPhysicalDiskOption
         if (ffReadFileDataRelative(dfd, "ro", 1, &roChar) > 0) {
             device->type |= roChar == '1' ? FF_PHYSICALDISK_TYPE_READONLY : FF_PHYSICALDISK_TYPE_READWRITE;
         }
-    }
-
-    {
-        ffStrbufInit(&device->serial);
-        if (ffReadFileBufferRelative(devfd, "serial", &device->serial)) {
-            ffStrbufTrimSpace(&device->serial);
-        }
-    }
-
-    {
-        ffStrbufInit(&device->revision);
-        if (ffReadFileBufferRelative(devfd, "firmware_rev", &device->revision)) {
-            ffStrbufTrimRightSpace(&device->revision);
-        } else {
-            if (ffReadFileBufferRelative(devfd, "rev", &device->revision)) {
-                ffStrbufTrimRightSpace(&device->revision);
-            }
-        }
-    }
-
-    if (options->temp) {
-        device->temperature = detectNvmeTemp(devfd);
-    } else {
-        device->temperature = FF_PHYSICALDISK_TEMP_UNSET;
     }
 }
 

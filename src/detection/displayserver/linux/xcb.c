@@ -2,16 +2,16 @@
 
 #ifdef FF_HAVE_XCB_RANDR
 
-#    include "common/library.h"
-#    include "common/properties.h"
-#    include "common/edidHelper.h"
-#    include "common/mallocHelper.h"
-#    include "common/stringUtils.h"
+    #include "common/library.h"
+    #include "common/properties.h"
+    #include "common/edidHelper.h"
+    #include "common/mallocHelper.h"
+    #include "common/stringUtils.h"
 
-#    include <stdlib.h>
-#    include <string.h>
-#    include <xcb/randr.h>
-#    include <xcb/xcb.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <xcb/randr.h>
+    #include <xcb/xcb.h>
 
 typedef struct XcbRandrData {
     FF_LIBRARY_SYMBOL(xcb_randr_get_screen_resources_current)
@@ -246,7 +246,8 @@ static bool xcbRandrHandleMonitor(XcbRandrData* data, xcb_randr_monitor_info_t* 
     xcb_randr_output_iterator_t outputIterator = {
         .index = 0,
         .data = data->ffxcb_randr_monitor_info_outputs(monitor),
-        .rem = data->ffxcb_randr_monitor_info_outputs_length(monitor)};
+        .rem = data->ffxcb_randr_monitor_info_outputs_length(monitor)
+    };
 
     FF_AUTO_FREE xcb_get_atom_name_reply_t* nameReply = data->ffxcb_get_atom_name_reply(
         data->connection,

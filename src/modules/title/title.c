@@ -139,7 +139,7 @@ void ffGenerateTitleJsonConfig(FFTitleOptions* options, yyjson_mut_doc* doc, yyj
     yyjson_mut_obj_add_strbuf(doc, color, "host", &options->colorHost);
 }
 
-bool ffGenerateTitleJsonResult(FF_MAYBE_UNUSED FFTitleOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateTitleJsonResult(FF_A_UNUSED FFTitleOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     yyjson_mut_val* obj = yyjson_mut_obj_add_obj(doc, module, "result");
 #ifdef _WIN32
     yyjson_mut_obj_add_strbuf(doc, obj, "userId", &instance.state.platform.sid);
@@ -177,7 +177,7 @@ void ffDestroyTitleOptions(FFTitleOptions* options) {
 
 FFModuleBaseInfo ffTitleModuleInfo = {
     .name = FF_TITLE_MODULE_NAME,
-    .description = "Print title, which contains your user name, hostname",
+    .description = "Print the title, including your username and hostname",
     .initOptions = (void*) ffInitTitleOptions,
     .destroyOptions = (void*) ffDestroyTitleOptions,
     .parseJsonObject = (void*) ffParseTitleJsonObject,
@@ -185,16 +185,17 @@ FFModuleBaseInfo ffTitleModuleInfo = {
     .generateJsonResult = (void*) ffGenerateTitleJsonResult,
     .generateJsonConfig = (void*) ffGenerateTitleJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"User name", "user-name"},
-        {"Host name", "host-name"},
-        {"Home directory", "home-dir"},
-        {"Executable path of current process", "exe-path"},
-        {"User's default shell", "user-shell"},
-        {"User name (colored)", "user-name-colored"},
-        {"@ symbol (colored)", "at-symbol-colored"},
-        {"Host name (colored)", "host-name-colored"},
-        {"Full user name", "full-user-name"},
-        {"UID (*nix) / SID (Windows)", "user-id"},
-        {"PID of current process", "pid"},
-        {"CWD with home dir replaced by `~`", "cwd"},
-    }))};
+        { "User name", "user-name" },
+        { "Host name", "host-name" },
+        { "Home directory", "home-dir" },
+        { "Executable path of current process", "exe-path" },
+        { "User's default shell", "user-shell" },
+        { "User name (colored)", "user-name-colored" },
+        { "@ symbol (colored)", "at-symbol-colored" },
+        { "Host name (colored)", "host-name-colored" },
+        { "Full user name", "full-user-name" },
+        { "UID (*nix) / SID (Windows)", "user-id" },
+        { "PID of current process", "pid" },
+        { "CWD with home dir replaced by `~`", "cwd" },
+    }))
+};

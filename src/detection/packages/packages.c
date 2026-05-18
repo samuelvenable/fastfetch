@@ -6,7 +6,7 @@
 #include <stddef.h>
 
 #ifdef __APPLE__
-#    define st_mtim st_mtimespec
+    #define st_mtim st_mtimespec
 #endif
 
 void ffDetectPackagesImpl(FFPackagesResult* result, FFPackagesOptions* options);
@@ -16,10 +16,6 @@ const char* ffDetectPackages(FFPackagesResult* result, FFPackagesOptions* option
 
     for (uint32_t i = 0; i < offsetof(FFPackagesResult, all) / sizeof(uint32_t); ++i) {
         result->all += ((uint32_t*) result)[i];
-    }
-
-    if (result->all == 0) {
-        return "No packages from known package managers found";
     }
 
     return NULL;
@@ -100,11 +96,11 @@ uint32_t ffPackagesGetNumElements(const char* dirname, bool isdir) {
         bool ok = false;
 
         if (entry->d_name[0] != '.') {
-#    if !defined(__sun) && !defined(__HAIKU__)
+    #if !defined(__sun) && !defined(__HAIKU__)
             if (entry->d_type != DT_UNKNOWN && entry->d_type != DT_LNK) {
                 ok = entry->d_type == (isdir ? DT_DIR : DT_REG);
             } else
-#    endif
+    #endif
             {
                 struct stat stbuf;
                 if (fstatat(dirfd(dirp), entry->d_name, &stbuf, 0) == 0) {

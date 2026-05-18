@@ -154,13 +154,13 @@ void ffParseColorsJsonObject(FFColorsOptions* options, yyjson_val* module) {
         if (unsafe_yyjson_equals_str(key, "symbol")) {
             int value;
             const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                       {"block", FF_COLORS_SYMBOL_BLOCK},
-                                                                       {"background", FF_COLORS_SYMBOL_BACKGROUND},
-                                                                       {"circle", FF_COLORS_SYMBOL_CIRCLE},
-                                                                       {"diamond", FF_COLORS_SYMBOL_DIAMOND},
-                                                                       {"triangle", FF_COLORS_SYMBOL_TRIANGLE},
-                                                                       {"square", FF_COLORS_SYMBOL_SQUARE},
-                                                                       {"star", FF_COLORS_SYMBOL_STAR},
+                                                                       { "block", FF_COLORS_SYMBOL_BLOCK },
+                                                                       { "background", FF_COLORS_SYMBOL_BACKGROUND },
+                                                                       { "circle", FF_COLORS_SYMBOL_CIRCLE },
+                                                                       { "diamond", FF_COLORS_SYMBOL_DIAMOND },
+                                                                       { "triangle", FF_COLORS_SYMBOL_TRIANGLE },
+                                                                       { "square", FF_COLORS_SYMBOL_SQUARE },
+                                                                       { "star", FF_COLORS_SYMBOL_STAR },
                                                                        {},
                                                                    });
             if (error) {
@@ -209,9 +209,9 @@ void ffParseColorsJsonObject(FFColorsOptions* options, yyjson_val* module) {
         if (unsafe_yyjson_equals_str(key, "brightness")) {
             int value;
             const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                       {"default", FF_COLORS_BRIGHTNESS_DEFAULT},
-                                                                       {"normal", FF_COLORS_BRIGHTNESS_NORMAL},
-                                                                       {"light", FF_COLORS_BRIGHTNESS_LIGHT},
+                                                                       { "default", FF_COLORS_BRIGHTNESS_DEFAULT },
+                                                                       { "normal", FF_COLORS_BRIGHTNESS_NORMAL },
+                                                                       { "light", FF_COLORS_BRIGHTNESS_LIGHT },
                                                                        {},
                                                                    });
             if (error) {
@@ -264,6 +264,18 @@ void ffGenerateColorsJsonConfig(FFColorsOptions* options, yyjson_mut_doc* doc, y
             yyjson_mut_arr_add_uint(doc, range, options->block.range[i]);
         }
     }
+
+    switch (options->brightness) {
+        case FF_COLORS_BRIGHTNESS_NORMAL:
+            yyjson_mut_obj_add_str(doc, module, "brightness", "normal");
+            break;
+        case FF_COLORS_BRIGHTNESS_LIGHT:
+            yyjson_mut_obj_add_str(doc, module, "brightness", "light");
+            break;
+        default:
+            yyjson_mut_obj_add_str(doc, module, "brightness", "default");
+            break;
+    }
 }
 
 void ffInitColorsOptions(FFColorsOptions* options) {
@@ -273,7 +285,7 @@ void ffInitColorsOptions(FFColorsOptions* options) {
     options->paddingLeft = 0;
     options->block = (FFBlockConfig) {
         .width = 3,
-        .range = {0, 15},
+        .range = { 0, 15 },
     };
     options->brightness = FF_COLORS_BRIGHTNESS_DEFAULT;
 }

@@ -1,5 +1,5 @@
 #include "physicalmemory.h"
-#include "common/smbiosHelper.h"
+#include "common/smbios.h"
 
 // 7.18
 typedef struct FFSmbiosMemoryDevice {
@@ -59,12 +59,12 @@ typedef struct FFSmbiosMemoryDevice {
     uint16_t Pmic0RevisionNumber; // varies
     uint16_t RcdManufacturerID;   // varies
     uint16_t RcdRevisionNumber;   // varies
-} __attribute__((__packed__)) FFSmbiosMemoryDevice;
+} FF_A_PACKED FFSmbiosMemoryDevice;
 
 static_assert(offsetof(FFSmbiosMemoryDevice, RcdRevisionNumber) == 0x62,
     "FFSmbiosMemoryDevice: Wrong struct alignment");
 
-const char* ffDetectPhysicalMemory(FFlist* result) {
+const char* ffDetectPhysicalMemory(FFPhysicalMemoryOptions* options, FFlist* result) {
     const FFSmbiosHeaderTable* smbiosTable = ffGetSmbiosHeaderTable();
     if (!smbiosTable) {
         return "Failed to get SMBIOS data";
@@ -84,7 +84,11 @@ const char* ffDetectPhysicalMemory(FFlist* result) {
         const char* strings = (const char*) data + data->Header.Length;
         bool installed = data->Size != 0;
 
-        FFPhysicalMemoryResult* device = ffListAdd(result);
+        if (!installed && !options->showEmptySlots) {
+            continue;
+        }
+
+        FFPhysicalMemoryResult* device = FF_LIST_ADD(FFPhysicalMemoryResult, *result);
         ffStrbufInit(&device->type);
         ffStrbufInit(&device->formFactor);
         ffStrbufInit(&device->locator);
@@ -142,6 +146,9 @@ const char* ffDetectPhysicalMemory(FFlist* result) {
             "SRIMM",            // 0x0E
             "FBDIMM",           // 0x0F
             "Die",              // 0x10
+            "CAMM",             // 0x11
+            "CUDIMM",           // 0x12
+            "CSODIMM",          // 0x13
         };
         if (data->FormFactor > 0 && data->FormFactor < ARRAY_SIZE(formFactorNames)) {
             ffStrbufSetS(&device->formFactor, formFactorNames[data->FormFactor]);
@@ -187,6 +194,7 @@ const char* ffDetectPhysicalMemory(FFlist* result) {
             "DDR5",                        // 0x22
             "LPDDR5",                      // 0x23
             "HBM3",                        // 0x24
+            "MRDIMM",                      // 0x25
         };
         if (!installed) {
             ffStrbufSetStatic(&device->type, "Empty");

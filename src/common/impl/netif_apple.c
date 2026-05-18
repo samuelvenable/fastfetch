@@ -1,6 +1,5 @@
 #include "common/netif.h"
 #include "common/io.h"
-#include "common/mallocHelper.h"
 
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -11,13 +10,13 @@
 #define ROUNDUP2(a, n) ((a) > 0 ? (1 + (((a) - 1U) | ((n) - 1))) : (n))
 
 #if __APPLE__
-// https://github.com/apple-oss-distributions/network_cmds/blob/8f38231438e6a4d16ef8015e97e12c2c05105644/rtsol.tproj/if.c#L243
-#    define ROUNDUP(a) ROUNDUP2((a), sizeof(uint32_t))
+    // https://github.com/apple-oss-distributions/network_cmds/blob/8f38231438e6a4d16ef8015e97e12c2c05105644/rtsol.tproj/if.c#L243
+    #define ROUNDUP(a) ROUNDUP2((a), sizeof(uint32_t))
 #elif __sun
-// https://github.com/illumos/illumos-gate/blob/95b8c88950fa7b19af46bc63230137cf96b0bff7/usr/src/cmd/cmd-inet/usr.sbin/route.c#L339
-#    define ROUNDUP(a) ROUNDUP2((a), sizeof(long))
+    // https://github.com/illumos/illumos-gate/blob/95b8c88950fa7b19af46bc63230137cf96b0bff7/usr/src/cmd/cmd-inet/usr.sbin/route.c#L339
+    #define ROUNDUP(a) ROUNDUP2((a), sizeof(long))
 #else
-#    error unknown platform
+    #error unknown platform
 #endif
 
 static struct sockaddr*
@@ -65,7 +64,7 @@ bool ffNetifGetDefaultRouteImplV4(FFNetifDefaultRouteResult* result) {
     }
 
     {
-        struct timeval timeout = {1, 0};
+        struct timeval timeout = { 1, 0 };
         setsockopt(pfRoute, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
         setsockopt(pfRoute, SOL_SOCKET, SO_SNDTIMEO, (char*) &timeout, sizeof(timeout));
     }
@@ -98,7 +97,16 @@ bool ffNetifGetDefaultRouteImplV4(FFNetifDefaultRouteResult* result) {
         return false;
     }
 
-    while (recv(pfRoute, &rtmsg, sizeof(rtmsg), 0) > 0 && !(rtmsg.hdr.rtm_seq == 1 && rtmsg.hdr.rtm_pid == (pid_t) pid));
+    bool gotResponse = false;
+    while (recv(pfRoute, &rtmsg, sizeof(rtmsg), 0) > 0) {
+        if (rtmsg.hdr.rtm_seq == 1 && rtmsg.hdr.rtm_pid == (pid_t) pid) {
+            gotResponse = true;
+            break;
+        }
+    }
+    if (!gotResponse) {
+        return false;
+    }
 
 #ifndef __sun // On Solaris, the RTF_GATEWAY flag is not set for default routes for some reason
     if ((rtmsg.hdr.rtm_flags & (RTF_UP | RTF_GATEWAY)) == (RTF_UP | RTF_GATEWAY))
@@ -109,8 +117,10 @@ bool ffNetifGetDefaultRouteImplV4(FFNetifDefaultRouteResult* result) {
 #ifndef __sun
             && sdl->sdl_len
 #endif
-        ) {
-            assert(sdl->sdl_nlen <= IF_NAMESIZE);
+            && sdl->sdl_family == AF_LINK) {
+            if (sdl->sdl_nlen > IF_NAMESIZE) {
+                return false;
+            }
             memcpy(result->ifName, sdl->sdl_data, sdl->sdl_nlen);
             result->ifName[sdl->sdl_nlen] = '\0';
             result->ifIndex = sdl->sdl_index;
@@ -138,7 +148,7 @@ bool ffNetifGetDefaultRouteImplV6(FFNetifDefaultRouteResult* result) {
     }
 
     {
-        struct timeval timeout = {1, 0};
+        struct timeval timeout = { 1, 0 };
         setsockopt(pfRoute, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
         setsockopt(pfRoute, SOL_SOCKET, SO_SNDTIMEO, (char*) &timeout, sizeof(timeout));
     }
@@ -171,7 +181,16 @@ bool ffNetifGetDefaultRouteImplV6(FFNetifDefaultRouteResult* result) {
         return false;
     }
 
-    while (recv(pfRoute, &rtmsg, sizeof(rtmsg), 0) > 0 && !(rtmsg.hdr.rtm_seq == 2 && rtmsg.hdr.rtm_pid == (pid_t) pid));
+    bool gotResponse = false;
+    while (recv(pfRoute, &rtmsg, sizeof(rtmsg), 0) > 0) {
+        if (rtmsg.hdr.rtm_seq == 2 && rtmsg.hdr.rtm_pid == (pid_t) pid) {
+            gotResponse = true;
+            break;
+        }
+    }
+    if (!gotResponse) {
+        return false;
+    }
 
 #ifndef __sun // On Solaris, the RTF_GATEWAY flag is not set for default routes for some reason
     if ((rtmsg.hdr.rtm_flags & (RTF_UP | RTF_GATEWAY)) == (RTF_UP | RTF_GATEWAY))
@@ -182,8 +201,10 @@ bool ffNetifGetDefaultRouteImplV6(FFNetifDefaultRouteResult* result) {
 #ifndef __sun
             && sdl->sdl_len
 #endif
-        ) {
-            assert(sdl->sdl_nlen <= IF_NAMESIZE);
+            && sdl->sdl_family == AF_LINK) {
+            if (sdl->sdl_nlen > IF_NAMESIZE) {
+                return false;
+            }
             memcpy(result->ifName, sdl->sdl_data, sdl->sdl_nlen);
             result->ifName[sdl->sdl_nlen] = '\0';
             result->ifIndex = sdl->sdl_index;

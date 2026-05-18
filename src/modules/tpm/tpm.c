@@ -7,7 +7,8 @@
 bool ffPrintTPM(FFTPMOptions* options) {
     FFTPMResult result = {
         .version = ffStrbufCreate(),
-        .description = ffStrbufCreate()};
+        .description = ffStrbufCreate()
+    };
     const char* error = ffDetectTPM(&result);
 
     if (error) {
@@ -51,10 +52,11 @@ void ffGenerateTPMJsonConfig(FFTPMOptions* options, yyjson_mut_doc* doc, yyjson_
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateTPMJsonResult(FF_MAYBE_UNUSED FFTPMOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateTPMJsonResult(FF_A_UNUSED FFTPMOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFTPMResult result = {
         .version = ffStrbufCreate(),
-        .description = ffStrbufCreate()};
+        .description = ffStrbufCreate()
+    };
     const char* error = ffDetectTPM(&result);
 
     if (error) {
@@ -82,7 +84,7 @@ void ffDestroyTPMOptions(FFTPMOptions* options) {
 
 FFModuleBaseInfo ffTPMModuleInfo = {
     .name = FF_TPM_MODULE_NAME,
-    .description = "Print info of Trusted Platform Module (TPM) Security Device",
+    .description = "Print information about the Trusted Platform Module (TPM) security device",
     .initOptions = (void*) ffInitTPMOptions,
     .destroyOptions = (void*) ffDestroyTPMOptions,
     .parseJsonObject = (void*) ffParseTPMJsonObject,
@@ -90,6 +92,7 @@ FFModuleBaseInfo ffTPMModuleInfo = {
     .generateJsonResult = (void*) ffGenerateTPMJsonResult,
     .generateJsonConfig = (void*) ffGenerateTPMJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"TPM device version", "version"},
-        {"TPM general description", "description"},
-    }))};
+        { "TPM device version", "version" },
+        { "TPM general description", "description" },
+    }))
+};

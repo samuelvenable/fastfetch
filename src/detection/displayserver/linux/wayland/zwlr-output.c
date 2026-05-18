@@ -1,14 +1,14 @@
 #ifdef FF_HAVE_WAYLAND
 
-#    include "wayland.h"
-#    include "wlr-output-management-unstable-v1-client-protocol.h"
+    #include "wayland.h"
+    #include "wlr-output-management-unstable-v1-client-protocol.h"
 
-static void waylandZwlrTransformListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, int32_t transform) {
+static void waylandZwlrTransformListener(void* data, FF_A_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, int32_t transform) {
     WaylandDisplay* wldata = (WaylandDisplay*) data;
     wldata->transform = (enum wl_output_transform) transform;
 }
 
-static void waylandZwlrScaleListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, wl_fixed_t scale) {
+static void waylandZwlrScaleListener(void* data, FF_A_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, wl_fixed_t scale) {
     WaylandDisplay* wldata = (WaylandDisplay*) data;
     wldata->dpi = (uint32_t) scale * 3 / 8; // wl_fixed_to_double(scale) * 96;
 }
@@ -21,18 +21,18 @@ typedef struct WaylandZwlrMode {
     struct zwlr_output_mode_v1* pMode;
 } WaylandZwlrMode;
 
-static void waylandZwlrModeSizeListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_mode_v1* zwlr_output_mode_v1, int32_t width, int32_t height) {
+static void waylandZwlrModeSizeListener(void* data, FF_A_UNUSED struct zwlr_output_mode_v1* zwlr_output_mode_v1, int32_t width, int32_t height) {
     WaylandZwlrMode* mode = (WaylandZwlrMode*) data;
     mode->width = width;
     mode->height = height;
 }
 
-static void waylandZwlrModeRefreshListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_mode_v1* zwlr_output_mode_v1, int32_t rate) {
+static void waylandZwlrModeRefreshListener(void* data, FF_A_UNUSED struct zwlr_output_mode_v1* zwlr_output_mode_v1, int32_t rate) {
     WaylandZwlrMode* mode = (WaylandZwlrMode*) data;
     mode->refreshRate = rate;
 }
 
-static void waylandZwlrModePreferredListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_mode_v1* zwlr_output_mode_v1) {
+static void waylandZwlrModePreferredListener(void* data, FF_A_UNUSED struct zwlr_output_mode_v1* zwlr_output_mode_v1) {
     WaylandZwlrMode* mode = (WaylandZwlrMode*) data;
     mode->preferred = true;
 }
@@ -44,20 +44,20 @@ static const struct zwlr_output_mode_v1_listener modeListener = {
     .finished = (void*) stubListener,
 };
 
-static void waylandZwlrModeListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, struct zwlr_output_mode_v1* mode) {
+static void waylandZwlrModeListener(void* data, FF_A_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, struct zwlr_output_mode_v1* mode) {
     WaylandDisplay* wldata = (WaylandDisplay*) data;
     if (!wldata->internal) {
         return;
     }
 
-    WaylandZwlrMode* newMode = ffListAdd((FFlist*) wldata->internal);
-    *newMode = (WaylandZwlrMode) {.pMode = mode};
+    WaylandZwlrMode* newMode = FF_LIST_ADD(WaylandZwlrMode, *(FFlist*) wldata->internal);
+    *newMode = (WaylandZwlrMode) { .pMode = mode };
 
     // Strangely, the listener is called only in this function, but not in `waylandZwlrCurrentModeListener`
     wldata->parent->ffwl_proxy_add_listener((struct wl_proxy*) mode, (void (**)(void)) &modeListener, newMode);
 }
 
-static void waylandZwlrCurrentModeListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, struct zwlr_output_mode_v1* mode) {
+static void waylandZwlrCurrentModeListener(void* data, FF_A_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, struct zwlr_output_mode_v1* mode) {
     // waylandZwlrModeListener is always run before this
     WaylandDisplay* wldata = (WaylandDisplay*) data;
     if (!wldata->internal) {
@@ -85,13 +85,13 @@ static void waylandZwlrCurrentModeListener(void* data, FF_MAYBE_UNUSED struct zw
     }
 }
 
-static void waylandZwlrPhysicalSizeListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, int32_t width, int32_t height) {
+static void waylandZwlrPhysicalSizeListener(void* data, FF_A_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, int32_t width, int32_t height) {
     WaylandDisplay* wldata = (WaylandDisplay*) data;
     wldata->physicalWidth = width;
     wldata->physicalHeight = height;
 }
 
-static void waylandZwlrEnabledListener(void* data, FF_MAYBE_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, bool enabled) {
+static void waylandZwlrEnabledListener(void* data, FF_A_UNUSED struct zwlr_output_head_v1* zwlr_output_head_v1, bool enabled) {
     WaylandDisplay* wldata = (WaylandDisplay*) data;
     if (!enabled) {
         wldata->internal = NULL;
@@ -115,10 +115,10 @@ static const struct zwlr_output_head_v1_listener headListener = {
     .adaptive_sync = (void*) stubListener,
 };
 
-static void waylandHandleZwlrHead(void* data, FF_MAYBE_UNUSED struct zwlr_output_manager_v1* zwlr_output_manager_v1, struct zwlr_output_head_v1* head) {
+static void waylandHandleZwlrHead(void* data, FF_A_UNUSED struct zwlr_output_manager_v1* zwlr_output_manager_v1, struct zwlr_output_head_v1* head) {
     WaylandData* wldata = data;
 
-    FF_LIST_AUTO_DESTROY modes = ffListCreate(sizeof(WaylandZwlrMode));
+    FF_LIST_AUTO_DESTROY modes = ffListCreate();
     WaylandDisplay display = {
         .parent = wldata,
         .transform = WL_OUTPUT_TRANSFORM_NORMAL,
@@ -183,17 +183,18 @@ static void waylandHandleZwlrHead(void* data, FF_MAYBE_UNUSED struct zwlr_output
     wldata->ffwl_proxy_destroy((void*) head);
 }
 
+static const struct zwlr_output_manager_v1_listener outputListener = {
+    .head = waylandHandleZwlrHead,
+    .done = (void*) stubListener,
+    .finished = (void*) stubListener,
+};
+
 const char* ffWaylandHandleZwlrOutput(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version) {
-    struct wl_proxy* output = wldata->ffwl_proxy_marshal_constructor_versioned((struct wl_proxy*) registry, WL_REGISTRY_BIND, &zwlr_output_manager_v1_interface, version, name, zwlr_output_manager_v1_interface.name, version, NULL);
+    uint32_t bindVersion = min(version, ZWLR_OUTPUT_MANAGER_V1_HEAD_SINCE_VERSION);
+    struct wl_proxy* output = wldata->ffwl_proxy_marshal_constructor_versioned((struct wl_proxy*) registry, WL_REGISTRY_BIND, &zwlr_output_manager_v1_interface, bindVersion, name, zwlr_output_manager_v1_interface.name, bindVersion, NULL);
     if (output == NULL) {
         return "Failed to bind zwlr_output_manager_v1";
     }
-
-    const struct zwlr_output_manager_v1_listener outputListener = {
-        .head = waylandHandleZwlrHead,
-        .done = (void*) stubListener,
-        .finished = (void*) stubListener,
-    };
 
     if (wldata->ffwl_proxy_add_listener(output, (void (**)(void)) &outputListener, wldata) < 0) {
         wldata->ffwl_proxy_destroy(output);

@@ -204,7 +204,7 @@ static void detectNumaNodes(FFCPUResult* cpu) {
 }
 
 #ifdef __ANDROID__
-#    include "common/settings.h"
+    #include "common/settings.h"
 
 static void detectQualcomm(FFCPUResult* cpu) {
     // https://en.wikipedia.org/wiki/List_of_Qualcomm_Snapdragon_systems_on_chips
@@ -452,7 +452,7 @@ static void detectAndroid(FFCPUResult* cpu) {
 #endif
 
 #if __arm__ || __aarch64__
-#    include "cpu_arm.h"
+    #include "cpu_arm.h"
 
 static void detectArmName(FFstrbuf* cpuinfo, FFCPUResult* cpu, uint32_t implId) {
     char* line = NULL;
@@ -553,11 +553,11 @@ static void detectArmName(FFstrbuf* cpuinfo, FFCPUResult* cpu, uint32_t implId) 
 static const char* parseCpuInfo(
     FFstrbuf* cpuinfo,
     FFCPUResult* cpu,
-    FF_MAYBE_UNUSED FFstrbuf* physicalCoresBuffer,
-    FF_MAYBE_UNUSED FFstrbuf* cpuMHz,
-    FF_MAYBE_UNUSED FFstrbuf* cpuIsa,
-    FF_MAYBE_UNUSED FFstrbuf* cpuUarch,
-    FF_MAYBE_UNUSED FFstrbuf* cpuImplementer) {
+    FF_A_UNUSED FFstrbuf* physicalCoresBuffer,
+    FF_A_UNUSED FFstrbuf* cpuMHz,
+    FF_A_UNUSED FFstrbuf* cpuIsa,
+    FF_A_UNUSED FFstrbuf* cpuUarch,
+    FF_A_UNUSED FFstrbuf* cpuImplementer) {
     char* line = NULL;
     size_t len = 0;
 
@@ -709,7 +709,7 @@ static bool detectFrequency(FFCPUResult* cpu, const FFCPUOptions* options) {
 
 #if __i386__ || __x86_64__
 
-FF_MAYBE_UNUSED static uint16_t getPackageCount(FFstrbuf* cpuinfo) {
+FF_A_UNUSED static uint16_t getPackageCount(FFstrbuf* cpuinfo) {
     const char* p = cpuinfo->chars;
     uint64_t low = 0, high = 0;
 
@@ -728,7 +728,7 @@ FF_MAYBE_UNUSED static uint16_t getPackageCount(FFstrbuf* cpuinfo) {
     return (uint16_t) (__builtin_popcountll(low) + __builtin_popcountll(high));
 }
 
-FF_MAYBE_UNUSED static const char* detectCPUX86(const FFCPUOptions* options, FFCPUResult* cpu) {
+FF_A_UNUSED static const char* detectCPUX86(const FFCPUOptions* options, FFCPUResult* cpu) {
     FF_STRBUF_AUTO_DESTROY cpuinfo = ffStrbufCreateA(PROC_FILE_BUFFSIZ);
     if (!ffReadFileBuffer(FF_CPUINFO_PATH, &cpuinfo) || cpuinfo.length == 0) {
         return "ffReadFileBuffer(\"" FF_CPUINFO_PATH "\") failed";
@@ -776,7 +776,7 @@ static const char* detectPhysicalCores(FFCPUResult* cpu) {
     uint64_t pkgLow = 0, pkgHigh = 0;
 
     struct dirent* entry;
-    FF_LIST_AUTO_DESTROY cpuList = ffListCreate(sizeof(uint32_t));
+    FF_LIST_AUTO_DESTROY cpuList = ffListCreate();
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_type != DT_DIR || !ffStrStartsWith(entry->d_name, "cpu") || !ffCharIsDigit(entry->d_name[strlen("cpu")])) {
             continue;
@@ -826,7 +826,7 @@ static const char* detectPhysicalCores(FFCPUResult* cpu) {
                     }
                 }
                 if (!found) {
-                    *(uint32_t*) ffListAdd(&cpuList) = coreId;
+                    *FF_LIST_ADD(uint32_t, cpuList) = coreId;
                 }
 
                 p = strchr(pend, ',');
@@ -843,7 +843,7 @@ static const char* detectPhysicalCores(FFCPUResult* cpu) {
     return NULL;
 }
 
-FF_MAYBE_UNUSED static void parseIsa(FFstrbuf* cpuIsa) {
+FF_A_UNUSED static void parseIsa(FFstrbuf* cpuIsa) {
     // Always use the last part of the ISA string. Ref: #590 #1204
     ffStrbufSubstrAfterLastC(cpuIsa, ' ');
 
@@ -863,7 +863,7 @@ FF_MAYBE_UNUSED static void parseIsa(FFstrbuf* cpuIsa) {
     }
 }
 
-FF_MAYBE_UNUSED static void detectSocName(FFCPUResult* cpu) {
+FF_A_UNUSED static void detectSocName(FFCPUResult* cpu) {
     if (cpu->name.length > 0) {
         return;
     }
@@ -925,7 +925,7 @@ FF_MAYBE_UNUSED static void detectSocName(FFCPUResult* cpu) {
 
     if (false) {
     }
-#    if __aarch64__
+    #if __aarch64__
     else if (ffStrEquals(vendor, "apple")) {
         // https://elixir.bootlin.com/linux/v6.11/source/arch/arm64/boot/dts/apple
         if (model[0] == 't') {
@@ -942,7 +942,7 @@ FF_MAYBE_UNUSED static void detectSocName(FFCPUResult* cpu) {
 
         ffStrbufSetStatic(&cpu->vendor, "Apple");
     }
-#    endif
+    #endif
     else if (ffStrEquals(vendor, "qcom")) {
         // https://elixir.bootlin.com/linux/v6.11/source/arch/arm64/boot/dts/qcom
         if (ffStrStartsWith(model, "x")) {
@@ -982,8 +982,8 @@ FF_MAYBE_UNUSED static void detectSocName(FFCPUResult* cpu) {
     }
 }
 
-#    ifdef __loongarch__
-FF_MAYBE_UNUSED static uint16_t getLoongarchPropCount(FFstrbuf* cpuinfo, const char* key) {
+    #ifdef __loongarch__
+FF_A_UNUSED static uint16_t getLoongarchPropCount(FFstrbuf* cpuinfo, const char* key) {
     const char* p = cpuinfo->chars;
     uint64_t low = 0, high = 0;
     uint32_t keylen = (uint32_t) strlen(key);
@@ -1002,17 +1002,17 @@ FF_MAYBE_UNUSED static uint16_t getLoongarchPropCount(FFstrbuf* cpuinfo, const c
 
     return (uint16_t) (__builtin_popcountll(low) + __builtin_popcountll(high));
 }
-#    endif
+    #endif
 
-FF_MAYBE_UNUSED static const char* detectCPUOthers(const FFCPUOptions* options, FFCPUResult* cpu) {
+FF_A_UNUSED static const char* detectCPUOthers(const FFCPUOptions* options, FFCPUResult* cpu) {
     cpu->coresLogical = (uint16_t) get_nprocs_conf();
     cpu->coresOnline = (uint16_t) get_nprocs();
 
-#    if __ANDROID__
+    #if __ANDROID__
     detectAndroid(cpu);
-#    elif !__powerpc__ && !__powerpc
+    #elif !__powerpc__ && !__powerpc
     detectSocName(cpu);
-#    endif
+    #endif
 
     detectFrequency(cpu, options);
 
@@ -1036,14 +1036,14 @@ FF_MAYBE_UNUSED static const char* detectCPUOthers(const FFCPUOptions* options, 
             cpu->frequencyBase = (uint32_t) ffStrbufToUInt(&cpuMHz, 0);
         }
 
-#    if __arm__ || __aarch64__
+    #if __arm__ || __aarch64__
         uint32_t cpuImplementer = (uint32_t) strtoul(cpuImplementerStr.chars, NULL, 16);
         ffStrbufSetStatic(&cpu->vendor, hwImplId2Vendor(cpuImplementer));
 
         if (cpu->name.length == 0) {
             detectArmName(&cpuinfo, cpu, cpuImplementer);
         }
-#    elif __riscv__ || __riscv
+    #elif __riscv__ || __riscv
         if (cpu->name.length == 0) {
             if (cpuUarch.length > 0) {
                 if (cpu->name.length > 0) {
@@ -1060,17 +1060,17 @@ FF_MAYBE_UNUSED static const char* detectCPUOthers(const FFCPUOptions* options, 
                 ffStrbufAppend(&cpu->name, &cpuIsa);
             }
         }
-#    elif __loongarch__
+    #elif __loongarch__
         cpu->packages = getLoongarchPropCount(&cpuinfo, "\npackage\t\t\t:");
         cpu->coresPhysical = getLoongarchPropCount(&cpuinfo, "\ncore\t\t\t:");
         if (cpu->packages > 1) {
             cpu->coresPhysical *= cpu->packages;
         }
-#    elif __s390x__
+    #elif __s390x__
         if (cpu->name.length) {
             ffStrbufPrependS(&cpu->name, "Machine ");
         }
-#    endif
+    #endif
     }
 
     if (cpu->coresPhysical == 0) {

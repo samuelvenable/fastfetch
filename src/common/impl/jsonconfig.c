@@ -133,17 +133,12 @@ static bool parseModuleJsonObject(const char* type, yyjson_val* jsonVal, yyjson_
 
 static void prepareModuleJsonObject(const char* type, yyjson_val* module) {
     switch (type[0]) {
-        case 'b':
-        case 'B': {
-            if (ffStrEqualsIgnCase(type, FF_CPUUSAGE_MODULE_NAME)) {
-                ffPrepareCPUUsage();
-            }
-            break;
-        }
         case 'c':
         case 'C': {
-            if (ffStrEqualsIgnCase(type, FF_COMMAND_MODULE_NAME)) {
-                __attribute__((__cleanup__(ffDestroyCommandOptions))) FFCommandOptions options;
+            if (ffStrEqualsIgnCase(type, FF_CPUUSAGE_MODULE_NAME)) {
+                ffPrepareCPUUsage();
+            } else if (ffStrEqualsIgnCase(type, FF_COMMAND_MODULE_NAME)) {
+                FF_A_CLEANUP(ffDestroyCommandOptions) FFCommandOptions options;
                 ffInitCommandOptions(&options);
                 if (module) {
                     ffCommandModuleInfo.parseJsonObject(&options, module);
@@ -155,7 +150,7 @@ static void prepareModuleJsonObject(const char* type, yyjson_val* module) {
         case 'd':
         case 'D': {
             if (ffStrEqualsIgnCase(type, FF_DISKIO_MODULE_NAME)) {
-                __attribute__((__cleanup__(ffDestroyDiskIOOptions))) FFDiskIOOptions options;
+                FF_A_CLEANUP(ffDestroyDiskIOOptions) FFDiskIOOptions options;
                 ffInitDiskIOOptions(&options);
                 if (module) {
                     ffDiskIOModuleInfo.parseJsonObject(&options, module);
@@ -167,7 +162,7 @@ static void prepareModuleJsonObject(const char* type, yyjson_val* module) {
         case 'n':
         case 'N': {
             if (ffStrEqualsIgnCase(type, FF_NETIO_MODULE_NAME)) {
-                __attribute__((__cleanup__(ffDestroyNetIOOptions))) FFNetIOOptions options;
+                FF_A_CLEANUP(ffDestroyNetIOOptions) FFNetIOOptions options;
                 ffInitNetIOOptions(&options);
                 if (module) {
                     ffNetIOModuleInfo.parseJsonObject(&options, module);
@@ -179,7 +174,7 @@ static void prepareModuleJsonObject(const char* type, yyjson_val* module) {
         case 'p':
         case 'P': {
             if (ffStrEqualsIgnCase(type, FF_PUBLICIP_MODULE_NAME)) {
-                __attribute__((__cleanup__(ffDestroyPublicIpOptions))) FFPublicIPOptions options;
+                FF_A_CLEANUP(ffDestroyPublicIpOptions) FFPublicIPOptions options;
                 ffInitPublicIpOptions(&options);
                 if (module) {
                     ffPublicIPModuleInfo.parseJsonObject(&options, module);
@@ -191,7 +186,7 @@ static void prepareModuleJsonObject(const char* type, yyjson_val* module) {
         case 'w':
         case 'W': {
             if (ffStrEqualsIgnCase(type, FF_WEATHER_MODULE_NAME)) {
-                __attribute__((__cleanup__(ffDestroyWeatherOptions))) FFWeatherOptions options;
+                FF_A_CLEANUP(ffDestroyWeatherOptions) FFWeatherOptions options;
                 ffInitWeatherOptions(&options);
                 if (module) {
                     ffWeatherModuleInfo.parseJsonObject(&options, module);
@@ -259,7 +254,7 @@ static const char* printJsonConfig(FFdata* data, bool prepare) {
             yyjson_val* conditions = yyjson_obj_get(module, "condition");
             if (conditions) {
                 if (!yyjson_is_obj(conditions)) {
-                    return "Property 'conditions' must be an object";
+                    return "Property 'condition' must be an object";
                 }
 
                 yyjson_val* system = yyjson_obj_get(conditions, "system");

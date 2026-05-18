@@ -8,7 +8,7 @@
 #define FF_CPUUSAGE_DISPLAY_NAME "CPU Usage"
 
 bool ffPrintCPUUsage(FFCPUUsageOptions* options) {
-    FF_LIST_AUTO_DESTROY percentages = ffListCreate(sizeof(double));
+    FF_LIST_AUTO_DESTROY percentages = ffListCreate();
     const char* error = ffGetCpuUsageResult(options, &percentages);
 
     if (error) {
@@ -154,7 +154,7 @@ void ffGenerateCPUUsageJsonConfig(FFCPUUsageOptions* options, yyjson_mut_doc* do
 }
 
 bool ffGenerateCPUUsageJsonResult(FFCPUUsageOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY percentages = ffListCreate(sizeof(double));
+    FF_LIST_AUTO_DESTROY percentages = ffListCreate();
     const char* error = ffGetCpuUsageResult(options, &percentages);
 
     if (error) {
@@ -172,7 +172,7 @@ bool ffGenerateCPUUsageJsonResult(FFCPUUsageOptions* options, yyjson_mut_doc* do
 void ffInitCPUUsageOptions(FFCPUUsageOptions* options) {
     ffOptionInitModuleArg(&options->moduleArgs, "󰓅");
     options->separate = false;
-    options->percent = (FFPercentageModuleConfig) {50, 80, 0};
+    options->percent = (FFPercentageModuleConfig) { 50, 80, 0 };
     options->waitTime = 200;
 }
 
@@ -182,7 +182,7 @@ void ffDestroyCPUUsageOptions(FFCPUUsageOptions* options) {
 
 FFModuleBaseInfo ffCPUUsageModuleInfo = {
     .name = FF_CPUUSAGE_MODULE_NAME,
-    .description = "Print CPU usage. Costs some time to collect data",
+    .description = "Print CPU usage. Collecting data takes some time",
     .initOptions = (void*) ffInitCPUUsageOptions,
     .destroyOptions = (void*) ffDestroyCPUUsageOptions,
     .parseJsonObject = (void*) ffParseCPUUsageJsonObject,
@@ -190,12 +190,13 @@ FFModuleBaseInfo ffCPUUsageModuleInfo = {
     .generateJsonResult = (void*) ffGenerateCPUUsageJsonResult,
     .generateJsonConfig = (void*) ffGenerateCPUUsageJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"CPU usage (percentage num, average)", "avg"},
-        {"CPU usage (percentage num, maximum)", "max"},
-        {"CPU core index of maximum usage", "max-index"},
-        {"CPU usage (percentage num, minimum)", "min"},
-        {"CPU core index of minimum usage", "min-index"},
-        {"CPU usage (percentage bar, average)", "avg-bar"},
-        {"CPU usage (percentage bar, maximum)", "max-bar"},
-        {"CPU usage (percentage bar, minimum)", "min-bar"},
-    }))};
+        { "CPU usage (percentage num, average)", "avg" },
+        { "CPU usage (percentage num, maximum)", "max" },
+        { "CPU core index of maximum usage", "max-index" },
+        { "CPU usage (percentage num, minimum)", "min" },
+        { "CPU core index of minimum usage", "min-index" },
+        { "CPU usage (percentage bar, average)", "avg-bar" },
+        { "CPU usage (percentage bar, maximum)", "max-bar" },
+        { "CPU usage (percentage bar, minimum)", "min-bar" },
+    }))
+};

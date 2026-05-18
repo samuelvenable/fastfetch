@@ -7,7 +7,7 @@
 #include <string.h>
 
 #ifdef FF_HAVE_GIO
-#    include <gio/gio.h>
+    #include <gio/gio.h>
 
 typedef struct GVariantGetters {
     FF_LIBRARY_SYMBOL(g_variant_dup_string)
@@ -22,11 +22,11 @@ static FFvariant getGVariantValue(GVariant* variant, FFvarianttype type, const G
     if (variant == NULL) {
         result = FF_VARIANT_NULL;
     } else if (type == FF_VARIANT_TYPE_STRING) {
-        result = (FFvariant) {.strValue = variantGetters->ffg_variant_dup_string(variant, NULL)}; // Dup string, so that variant itself can be freed
+        result = (FFvariant) { .strValue = variantGetters->ffg_variant_dup_string(variant, NULL) }; // Dup string, so that variant itself can be freed
     } else if (type == FF_VARIANT_TYPE_BOOL) {
-        result = (FFvariant) {.boolValue = (bool) variantGetters->ffg_variant_get_boolean(variant), .boolValueSet = true};
+        result = (FFvariant) { .boolValue = (bool) variantGetters->ffg_variant_get_boolean(variant), .boolValueSet = true };
     } else if (type == FF_VARIANT_TYPE_INT) {
-        result = (FFvariant) {.intValue = variantGetters->ffg_variant_get_int32(variant)};
+        result = (FFvariant) { .intValue = variantGetters->ffg_variant_get_int32(variant) };
     } else {
         result = FF_VARIANT_NULL;
     }
@@ -124,7 +124,7 @@ FFvariant ffSettingsGetGSettings(const char* schemaName, const char* path, const
 #endif // FF_HAVE_GIO
 
 #ifdef FF_HAVE_DCONF
-#    include <dconf.h>
+    #include <dconf.h>
 
 typedef struct DConfData {
     FF_LIBRARY_SYMBOL(dconf_client_read_full)
@@ -200,7 +200,7 @@ FFvariant ffSettingsGetGnome(const char* dconfKey, const char* gsettingsSchemaNa
 }
 
 #ifdef FF_HAVE_DBUS
-#    include "common/dbus.h"
+    #include "common/dbus.h"
 
 FFvariant ffSettingsGetXFConf(const char* channelName, const char* propertyName, FFvarianttype type) {
     FF_DBUS_AUTO_DESTROY_DATA FFDBusData dbus = {};
@@ -220,11 +220,12 @@ FFvariant ffSettingsGetXFConf(const char* channelName, const char* propertyName,
     }
 
     if (type == FF_VARIANT_TYPE_INT) {
-        int32_t value;
+        int64_t value;
         if (ffDBusGetInt(&dbus, &rootIterator, &value)) {
             dbus.lib->ffdbus_message_unref(reply);
-            return (FFvariant) {.intValue = value};
+            return (FFvariant) { .intValue = (int32_t) value };
         }
+        dbus.lib->ffdbus_message_unref(reply);
         return FF_VARIANT_NULL;
     }
 
@@ -232,8 +233,9 @@ FFvariant ffSettingsGetXFConf(const char* channelName, const char* propertyName,
         FFstrbuf value = ffStrbufCreate();
         if (ffDBusGetString(&dbus, &rootIterator, &value)) {
             dbus.lib->ffdbus_message_unref(reply);
-            return (FFvariant) {.strValue = value.chars}; // Leaks value.chars
+            return (FFvariant) { .strValue = value.chars }; // Leaks value.chars
         }
+        dbus.lib->ffdbus_message_unref(reply);
         return FF_VARIANT_NULL;
     }
 
@@ -241,14 +243,15 @@ FFvariant ffSettingsGetXFConf(const char* channelName, const char* propertyName,
         bool value;
         if (ffDBusGetBool(&dbus, &rootIterator, &value)) {
             dbus.lib->ffdbus_message_unref(reply);
-            return (FFvariant) {.boolValue = value, .boolValueSet = true};
+            return (FFvariant) { .boolValue = value, .boolValueSet = true };
         }
     }
 
+    dbus.lib->ffdbus_message_unref(reply);
     return FF_VARIANT_NULL;
 }
 
-#    define FF_DBUS_ITER_CONTINUE(dbus, iterator)                \
+    #define FF_DBUS_ITER_CONTINUE(dbus, iterator)                \
         {                                                        \
             if (!(dbus).lib->ffdbus_message_iter_next(iterator)) \
                 break;                                           \
@@ -292,11 +295,12 @@ FFvariant ffSettingsGetXFConfFirstMatch(const char* channelName, const char* pro
         dbus.lib->ffdbus_message_iter_next(&dictIterator);
 
         if (type == FF_VARIANT_TYPE_INT) {
-            int32_t value;
+            int64_t value;
             if (ffDBusGetInt(&dbus, &dictIterator, &value)) {
                 dbus.lib->ffdbus_message_unref(reply);
-                return (FFvariant) {.intValue = value};
+                return (FFvariant) { .intValue = (int32_t) value };
             }
+            dbus.lib->ffdbus_message_unref(reply);
             return FF_VARIANT_NULL;
         }
 
@@ -304,8 +308,9 @@ FFvariant ffSettingsGetXFConfFirstMatch(const char* channelName, const char* pro
             FFstrbuf value = ffStrbufCreate();
             if (ffDBusGetString(&dbus, &dictIterator, &value)) {
                 dbus.lib->ffdbus_message_unref(reply);
-                return (FFvariant) {.strValue = value.chars}; // Leaks value.chars
+                return (FFvariant) { .strValue = value.chars }; // Leaks value.chars
             }
+            dbus.lib->ffdbus_message_unref(reply);
             return FF_VARIANT_NULL;
         }
 
@@ -313,13 +318,15 @@ FFvariant ffSettingsGetXFConfFirstMatch(const char* channelName, const char* pro
             bool value;
             if (ffDBusGetBool(&dbus, &dictIterator, &value)) {
                 dbus.lib->ffdbus_message_unref(reply);
-                return (FFvariant) {.boolValue = value, .boolValueSet = true};
+                return (FFvariant) { .boolValue = value, .boolValueSet = true };
             }
         }
 
+        dbus.lib->ffdbus_message_unref(reply);
         return FF_VARIANT_NULL;
     }
 
+    dbus.lib->ffdbus_message_unref(reply);
     return FF_VARIANT_NULL;
 }
 #else  // FF_HAVE_DBUS
@@ -334,7 +341,7 @@ FFvariant ffSettingsGetXFConfFirstMatch(const char* channelName, const char* pro
 #endif // FF_HAVE_DBUS
 
 #ifdef FF_HAVE_SQLITE3
-#    include <sqlite3.h>
+    #include <sqlite3.h>
 
 typedef struct SQLiteData {
     FF_LIBRARY_SYMBOL(sqlite3_open_v2)
@@ -454,7 +461,7 @@ bool ffSettingsGetSQLite3String(const char* dbPath, const char* query, FFstrbuf*
 #endif // FF_HAVE_SQLITE3
 
 #ifdef __ANDROID__
-#    include <sys/system_properties.h>
+    #include <sys/system_properties.h>
 bool ffSettingsGetAndroidProperty(const char* propName, FFstrbuf* result) {
     ffStrbufEnsureFree(result, PROP_VALUE_MAX);
     int len = __system_property_get(propName, result->chars + result->length);
@@ -466,7 +473,7 @@ bool ffSettingsGetAndroidProperty(const char* propName, FFstrbuf* result) {
     return true;
 }
 #elif defined(__FreeBSD__)
-#    include <kenv.h>
+    #include <kenv.h>
 bool ffSettingsGetFreeBSDKenv(const char* propName, FFstrbuf* result) {
     // https://wiki.ghostbsd.org/index.php/Kenv
     ffStrbufEnsureFree(result, KENV_MVALLEN);
@@ -476,5 +483,127 @@ bool ffSettingsGetFreeBSDKenv(const char* propName, FFstrbuf* result) {
     }
     result->length += (uint32_t) len - 1;
     return true;
+}
+#endif
+
+#ifdef FF_HAVE_EET
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wconversion"
+    #pragma GCC diagnostic ignored "-Wsign-conversion"
+    #pragma GCC diagnostic ignored "-Wfloat-conversion"
+    #include <Eet.h>
+    #pragma GCC diagnostic pop
+
+typedef struct E_Font_Default {
+    char* text_class;
+    char* font;
+    int size;
+} E_Font_Default;
+
+typedef struct E_Config {
+    char* theme_default_border_style;
+    char* icon_theme;
+    int use_e_cursor;
+    int cursor_size;
+    char* desktop_default_background;
+    Eina_List* font_defaults;
+} E_Config; // Must be the same name as the top level struct in e.cfg
+
+    #define FF_EET_EINA_FILE_DATA_DESCRIPTOR_CLASS_SET(clas, type) \
+        (ffeet_eina_file_data_descriptor_class_set(clas, sizeof(*(clas)), #type, sizeof(type)))
+    #define FF_EET_DATA_DESCRIPTOR_ADD_BASIC(edd, struct_type, member, type)                                                                                 \
+        do {                                                                                                                                                 \
+            struct_type ___ett;                                                                                                                              \
+            ffeet_data_descriptor_element_add(edd, #member, type, EET_G_UNKNOWN, (char*) (&(___ett.member)) - (char*) (&(___ett)), 0, /* 0,  */ NULL, NULL); \
+        } while (0)
+    #define FF_EET_DATA_DESCRIPTOR_ADD_LIST(edd, struct_type, member, subtype)                                                                                       \
+        do {                                                                                                                                                         \
+            struct_type ___ett;                                                                                                                                      \
+            ffeet_data_descriptor_element_add(edd, #member, EET_T_UNKNOW, EET_G_LIST, (char*) (&(___ett.member)) - (char*) (&(___ett)), 0, /* 0,  */ NULL, subtype); \
+        } while (0)
+
+bool ffSettingsGetEnlightenmentProperty(ffEnlightenmentSettings* result) {
+    FF_LIBRARY_LOAD(libeet, false, "libeet" FF_LIBRARY_EXTENSION, 1);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_init, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_open, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_data_descriptor_file_new, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_data_read, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_close, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_shutdown, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_data_descriptor_free, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_eina_file_data_descriptor_class_set, false);
+    FF_LIBRARY_LOAD_SYMBOL(libeet, eet_data_descriptor_element_add, false);
+
+    if (ffeet_init() == 0) {
+        return false;
+    }
+
+    FF_STRBUF_AUTO_DESTROY fileName = ffStrbufCreateCopy(&instance.state.platform.homeDir);
+    ffStrbufAppendS(&fileName, ".e/e/config/standard/e.cfg");
+
+    Eet_File* ef = ffeet_open(fileName.chars, EET_FILE_MODE_READ);
+    if (!ef) {
+        ffeet_shutdown();
+        return false;
+    }
+
+    Eet_Data_Descriptor_Class fontDdc;
+    FF_EET_EINA_FILE_DATA_DESCRIPTOR_CLASS_SET(&fontDdc, E_Font_Default);
+    Eet_Data_Descriptor* fontDdd = ffeet_data_descriptor_file_new(&fontDdc);
+    if (!fontDdd) {
+        ffeet_close(ef);
+        ffeet_shutdown();
+        return false;
+    }
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(fontDdd, E_Font_Default, text_class, EET_T_STRING);
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(fontDdd, E_Font_Default, font, EET_T_STRING);
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(fontDdd, E_Font_Default, size, EET_T_INT);
+
+    Eet_Data_Descriptor_Class eddc;
+    FF_EET_EINA_FILE_DATA_DESCRIPTOR_CLASS_SET(&eddc, E_Config);
+    Eet_Data_Descriptor* edd = ffeet_data_descriptor_file_new(&eddc);
+    if (!edd) {
+        ffeet_data_descriptor_free(fontDdd);
+        ffeet_close(ef);
+        ffeet_shutdown();
+        return false;
+    }
+
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Config, theme_default_border_style, EET_T_STRING);
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Config, icon_theme, EET_T_STRING);
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Config, use_e_cursor, EET_T_INT);
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Config, cursor_size, EET_T_INT);
+    FF_EET_DATA_DESCRIPTOR_ADD_BASIC(edd, E_Config, desktop_default_background, EET_T_STRING);
+    FF_EET_DATA_DESCRIPTOR_ADD_LIST(edd, E_Config, font_defaults, fontDdd);
+
+    E_Config* parsed = ffeet_data_read(ef, edd, "config");
+
+    if (parsed) {
+        // TODO: find a better method to get the main theme name
+        result->theme = parsed->theme_default_border_style;
+        result->icon_theme = parsed->icon_theme;
+        result->use_e_cursor = !!parsed->use_e_cursor;
+        result->cursor_size = parsed->cursor_size;
+        result->desktop_default_background = parsed->desktop_default_background;
+
+        E_Font_Default* firstFont = eina_list_data_get(parsed->font_defaults);
+        if (firstFont) {
+            result->font = firstFont->font;
+        }
+    }
+
+    ffeet_close(ef);
+    ffeet_data_descriptor_free(edd);
+    ffeet_data_descriptor_free(fontDdd);
+    if (!parsed) {
+        // We don't shutdown eet so that `result->*` are not freed
+        ffeet_shutdown();
+    }
+
+    return !!parsed;
+}
+#else
+bool ffSettingsGetEnlightenmentProperty(FF_A_UNUSED ffEnlightenmentSettings* result) {
+    return false;
 }
 #endif

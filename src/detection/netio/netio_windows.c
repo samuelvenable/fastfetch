@@ -49,9 +49,9 @@ const char* ffNetIOGetIoCounters(FFlist* result, FFNetIOOptions* options) {
             continue;
         }
 
-        MIB_IF_ROW2 ifRow = {.InterfaceIndex = adapter->IfIndex};
+        MIB_IF_ROW2 ifRow = { .InterfaceIndex = adapter->IfIndex };
         if (GetIfEntry2(&ifRow) == NO_ERROR) {
-            FFNetIOResult* counters = (FFNetIOResult*) ffListAdd(result);
+            FFNetIOResult* counters = FF_LIST_ADD(FFNetIOResult, *result);
             *counters = (FFNetIOResult) {
                 .name = ffStrbufCreateMove(&name),
                 .txBytes = ifRow.OutOctets,

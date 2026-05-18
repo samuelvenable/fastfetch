@@ -120,7 +120,7 @@ void ffGenerateOSJsonConfig(FFOSOptions* options, yyjson_mut_doc* doc, yyjson_mu
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateOSJsonResult(FF_MAYBE_UNUSED FFOSOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateOSJsonResult(FF_A_UNUSED FFOSOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     const FFOSResult* os = ffDetectOS();
 
     if (os->name.length == 0 && os->prettyName.length == 0 && os->id.length == 0) {
@@ -173,7 +173,7 @@ void ffDestroyOSOptions(FFOSOptions* options) {
 
 FFModuleBaseInfo ffOSModuleInfo = {
     .name = FF_OS_MODULE_NAME,
-    .description = "Print operating system name and version",
+    .description = "Print the OS or Linux distribution name and version",
     .initOptions = (void*) ffInitOSOptions,
     .destroyOptions = (void*) ffDestroyOSOptions,
     .parseJsonObject = (void*) ffParseOSJsonObject,
@@ -181,16 +181,17 @@ FFModuleBaseInfo ffOSModuleInfo = {
     .generateJsonResult = (void*) ffGenerateOSJsonResult,
     .generateJsonConfig = (void*) ffGenerateOSJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Name of the kernel", "sysname"},
-        {"Name of the OS", "name"},
-        {"Pretty name of the OS, if available", "pretty-name"},
-        {"ID of the OS", "id"},
-        {"ID like of the OS", "id-like"},
-        {"Variant of the OS", "variant"},
-        {"Variant ID of the OS", "variant-id"},
-        {"Version of the OS", "version"},
-        {"Version ID of the OS", "version-id"},
-        {"Version codename of the OS", "codename"},
-        {"Build ID of the OS", "build-id"},
-        {"Architecture of the OS", "arch"},
-    }))};
+        { "Name of the kernel", "sysname" },
+        { "Name of the OS", "name" },
+        { "Pretty name of the OS, if available", "pretty-name" },
+        { "ID of the OS", "id" },
+        { "ID like of the OS", "id-like" },
+        { "Variant of the OS", "variant" },
+        { "Variant ID of the OS", "variant-id" },
+        { "Version of the OS", "version" },
+        { "Version ID of the OS", "version-id" },
+        { "Version codename of the OS", "codename" },
+        { "Build ID of the OS", "build-id" },
+        { "Architecture of the OS", "arch" },
+    }))
+};

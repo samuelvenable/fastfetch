@@ -7,7 +7,8 @@
 bool ffPrintTheme(FFThemeOptions* options) {
     FFThemeResult result = {
         .theme1 = ffStrbufCreate(),
-        .theme2 = ffStrbufCreate()};
+        .theme2 = ffStrbufCreate()
+    };
     const char* error = ffDetectTheme(&result);
 
     if (error) {
@@ -55,10 +56,11 @@ void ffGenerateThemeJsonConfig(FFThemeOptions* options, yyjson_mut_doc* doc, yyj
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateThemeJsonResult(FF_MAYBE_UNUSED FFThemeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+bool ffGenerateThemeJsonResult(FF_A_UNUSED FFThemeOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
     FFThemeResult result = {
         .theme1 = ffStrbufCreate(),
-        .theme2 = ffStrbufCreate()};
+        .theme2 = ffStrbufCreate()
+    };
     const char* error = ffDetectTheme(&result);
 
     if (error) {
@@ -86,7 +88,7 @@ void ffDestroyThemeOptions(FFThemeOptions* options) {
 
 FFModuleBaseInfo ffThemeModuleInfo = {
     .name = FF_THEME_MODULE_NAME,
-    .description = "Print current theme of desktop environment",
+    .description = "Print the current desktop environment theme",
     .initOptions = (void*) ffInitThemeOptions,
     .destroyOptions = (void*) ffDestroyThemeOptions,
     .parseJsonObject = (void*) ffParseThemeJsonObject,
@@ -94,6 +96,7 @@ FFModuleBaseInfo ffThemeModuleInfo = {
     .generateJsonResult = (void*) ffGenerateThemeJsonResult,
     .generateJsonConfig = (void*) ffGenerateThemeJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Theme part 1", "theme1"},
-        {"Theme part 2", "theme2"},
-    }))};
+        { "Theme part 1", "theme1" },
+        { "Theme part 2", "theme2" },
+    }))
+};

@@ -20,56 +20,56 @@ static const char* tryNonThreadingFastPath(FFNetworkingState* state) {
 #if defined(TCP_FASTOPEN) || __APPLE__
 
     if (!state->tfo) {
-#    if __linux__ || __GNU__
+    #if __linux__ || __GNU__
         // Linux doesn't support sendto() on unconnected sockets
         FF_DEBUG("TCP Fast Open disabled, skipping");
         return "TCP Fast Open disabled";
-#    endif
+    #endif
     } else {
         FF_DEBUG("Attempting to use TCP Fast Open to connect");
 
-#    ifndef __APPLE__ // On macOS, TCP_FASTOPEN doesn't seem to be needed
+    #ifndef __APPLE__ // On macOS, TCP_FASTOPEN doesn't seem to be needed
         // Set TCP Fast Open
         int flag = 1;
         if (setsockopt(state->sockfd, IPPROTO_TCP,
-#        ifdef __APPLE__
+        #ifdef __APPLE__
                 // https://github.com/rust-lang/libc/pull/3135
                 0x218 // TCP_FASTOPEN_FORCE_ENABLE
-#        else
+        #else
                 TCP_FASTOPEN
-#        endif
+        #endif
                 ,
                 &flag,
                 sizeof(flag)) != 0) {
             FF_DEBUG("Failed to set TCP_FASTOPEN option: %s", strerror(errno));
             return "setsockopt(TCP_FASTOPEN) failed";
         } else {
-#        if __linux__ || __GNU__
+        #if __linux__ || __GNU__
             FF_DEBUG("Successfully set TCP_FASTOPEN option, queue length: %d", flag);
-#        elif defined(__APPLE__)
+        #elif defined(__APPLE__)
             FF_DEBUG("Successfully set TCP_FASTOPEN_FORCE_ENABLE option");
-#        else
+        #else
             FF_DEBUG("Successfully set TCP_FASTOPEN option");
-#        endif
+        #endif
         }
-#    endif
+    #endif
     }
 
-#    ifndef __APPLE__
+    #ifndef __APPLE__
     FF_DEBUG("Using sendto() + MSG_DONTWAIT to send %u bytes of data", state->command.length);
     ssize_t sent = sendto(state->sockfd,
         state->command.chars,
         state->command.length,
-#        ifdef MSG_FASTOPEN
+        #ifdef MSG_FASTOPEN
         MSG_FASTOPEN |
-#        endif
-#        ifdef MSG_NOSIGNAL
+        #endif
+        #ifdef MSG_NOSIGNAL
             MSG_NOSIGNAL |
-#        endif
+        #endif
             MSG_DONTWAIT,
         state->addr->ai_addr,
         state->addr->ai_addrlen);
-#    else
+    #else
     if (fcntl(state->sockfd, F_SETFL, O_NONBLOCK) == -1) {
         FF_DEBUG("fcntl(F_SETFL) failed: %s", strerror(errno));
         return "fcntl(F_SETFL) failed";
@@ -97,20 +97,20 @@ static const char* tryNonThreadingFastPath(FFNetworkingState* state) {
         FF_DEBUG("fcntl(F_SETFL) failed: %s", strerror(errno));
         return "fcntl(F_SETFL) failed";
     }
-#    endif
+    #endif
     if (sent > 0 || (errno == EAGAIN || errno == EWOULDBLOCK
-#    ifdef __APPLE__
+    #ifdef __APPLE__
                         // On macOS EINPROGRESS means the connection cannot be completed immediately
                         // On Linux, it means the TFO cookie is not available locally
                         || errno == EINPROGRESS
-#    endif
+    #endif
                         )) {
         FF_DEBUG(
-#    ifdef __APPLE__
+    #ifdef __APPLE__
             "connectx()"
-#    else
+    #else
             "sendto()"
-#    endif
+    #endif
             " %s (sent=%zd, %s)",
             errno == 0 ? "succeeded" : "was in progress",
             sent,
@@ -122,18 +122,18 @@ static const char* tryNonThreadingFastPath(FFNetworkingState* state) {
     }
 
     FF_DEBUG(
-#    ifdef __APPLE__
+    #ifdef __APPLE__
         "connectx()"
-#    else
+    #else
         "sendto()"
-#    endif
+    #endif
         " failed: %s",
         strerror(errno));
-#    ifdef __APPLE__
+    #ifdef __APPLE__
     return "connectx() failed";
-#    else
+    #else
     return "sendto() failed";
-#    endif
+    #endif
 #else
     FF_UNUSED(state);
     return "TFO support is not available";
@@ -210,7 +210,8 @@ static const char* initNetworkingState(FFNetworkingState* state, const char* hos
     struct addrinfo hints = {
         .ai_family = state->ipv6 ? AF_INET6 : AF_INET,
         .ai_socktype = SOCK_STREAM,
-        .ai_flags = AI_NUMERICSERV};
+        .ai_flags = AI_NUMERICSERV
+    };
 
     FF_DEBUG("Resolving address: %s (%s)", host, state->ipv6 ? "IPv6" : "IPv4");
     // Use AI_NUMERICSERV flag to indicate the service is a numeric port, reducing parsing time
@@ -253,7 +254,7 @@ static const char* initNetworkingState(FFNetworkingState* state, const char* hos
 
     if (state->timeout > 0) {
         FF_DEBUG("Setting connection timeout: %u ms", state->timeout);
-        FF_MAYBE_UNUSED uint32_t sec = state->timeout / 1000;
+        FF_A_UNUSED uint32_t sec = state->timeout / 1000;
         if (sec == 0) {
             sec = 1;
         }
@@ -377,7 +378,7 @@ const char* ffNetworkingRecvHttpResponse(FFNetworkingState* state, FFstrbuf* buf
     {
         int pollRes = poll(&(struct pollfd) {
                                .fd = state->sockfd,
-                               .events = POLLIN},
+                               .events = POLLIN },
             1,
             timeout > 0 ? (int) timeout : -1);
         if (pollRes == 0) {
@@ -409,7 +410,7 @@ const char* ffNetworkingRecvHttpResponse(FFNetworkingState* state, FFstrbuf* buf
     }
 
     FF_DEBUG("Starting data reception");
-    FF_MAYBE_UNUSED int recvCount = 0;
+    FF_A_UNUSED int recvCount = 0;
     uint32_t contentLength = 0;
     uint32_t headerEnd = 0;
 
@@ -447,7 +448,7 @@ const char* ffNetworkingRecvHttpResponse(FFNetworkingState* state, FFstrbuf* buf
                 // Check for Content-Length header to pre-allocate enough memory
                 const char* clHeader = strcasestr(buffer->chars, "Content-Length:");
                 if (clHeader) {
-                    contentLength = (uint32_t) strtoul(clHeader + 16, NULL, 10);
+                    contentLength = (uint32_t) strtoul(clHeader + 15, NULL, 10);
                     if (contentLength > 0) {
                         FF_DEBUG("Detected Content-Length: %u, pre-allocating buffer", contentLength);
                         // Ensure buffer is large enough, adding header size and some margin
@@ -472,16 +473,16 @@ const char* ffNetworkingRecvHttpResponse(FFNetworkingState* state, FFstrbuf* buf
         FF_DEBUG("No HTTP header end marker found");
         return "No HTTP header end found";
     }
+
+    if (!ffStrbufStartsWithS(buffer, "HTTP/1.0 200 OK\r\n")) {
+        FF_DEBUG("Invalid response: %.40s...", buffer->chars);
+        return "Invalid response";
+    }
+    FF_DEBUG("Received valid HTTP 200 response, content %u bytes, total %u bytes", contentLength, buffer->length);
+
     if (contentLength > 0 && buffer->length != contentLength + headerEnd + 4) {
         FF_DEBUG("Received content length mismatches: %u != %u", buffer->length, contentLength + headerEnd + 4);
         return "Content length mismatch";
-    }
-
-    if (ffStrbufStartsWithS(buffer, "HTTP/1.0 200 OK\r\n")) {
-        FF_DEBUG("Received valid HTTP 200 response, content %u bytes, total %u bytes", contentLength, buffer->length);
-    } else {
-        FF_DEBUG("Invalid response: %.40s...", buffer->chars);
-        return "Invalid response";
     }
 
 // If compression was used, try to decompress

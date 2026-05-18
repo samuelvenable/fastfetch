@@ -79,7 +79,7 @@ void ffPrepareCommandOption(FFdata* data) {
             case 'D':
             case 'd':
                 FF_IF_MODULE_MATCH(FF_DISKIO_MODULE_NAME) {
-                    __attribute__((__cleanup__(ffDestroyDiskIOOptions))) FFDiskIOOptions options;
+                    FF_A_CLEANUP(ffDestroyDiskIOOptions) FFDiskIOOptions options;
                     ffInitDiskIOOptions(&options);
                     ffPrepareDiskIO(&options);
                 }
@@ -88,7 +88,7 @@ void ffPrepareCommandOption(FFdata* data) {
             case 'N':
             case 'n':
                 FF_IF_MODULE_MATCH(FF_NETIO_MODULE_NAME) {
-                    __attribute__((__cleanup__(ffDestroyNetIOOptions))) FFNetIOOptions options;
+                    FF_A_CLEANUP(ffDestroyNetIOOptions) FFNetIOOptions options;
                     ffInitNetIOOptions(&options);
                     ffPrepareNetIO(&options);
                 }
@@ -97,7 +97,7 @@ void ffPrepareCommandOption(FFdata* data) {
             case 'P':
             case 'p':
                 FF_IF_MODULE_MATCH(FF_PUBLICIP_MODULE_NAME) {
-                    __attribute__((__cleanup__(ffDestroyPublicIpOptions))) FFPublicIPOptions options;
+                    FF_A_CLEANUP(ffDestroyPublicIpOptions) FFPublicIPOptions options;
                     ffInitPublicIpOptions(&options);
                     ffPreparePublicIp(&options);
                 }
@@ -106,7 +106,7 @@ void ffPrepareCommandOption(FFdata* data) {
             case 'W':
             case 'w':
                 FF_IF_MODULE_MATCH(FF_WEATHER_MODULE_NAME) {
-                    __attribute__((__cleanup__(ffDestroyWeatherOptions))) FFWeatherOptions options;
+                    FF_A_CLEANUP(ffDestroyWeatherOptions) FFWeatherOptions options;
                     ffInitWeatherOptions(&options);
                     ffPrepareWeather(&options);
                 }
@@ -157,7 +157,7 @@ static void genJsonResult(FFdata* data, FFModuleBaseInfo* baseInfo, void* option
     }
 }
 
-static void parseStructureCommand(
+static bool parseStructureCommand(
     FFdata* data,
     const char* line,
     void (*fn)(FFdata*, FFModuleBaseInfo* baseInfo, void* options)) {
@@ -167,18 +167,26 @@ static void parseStructureCommand(
             if (ffStrEqualsIgnCase(line, baseInfo->name)) {
                 uint8_t optionBuf[FF_OPTION_MAX_SIZE];
                 baseInfo->initOptions(optionBuf);
-                if (__builtin_expect(data->resultDoc != NULL, false)) {
+                if (data->resultDoc != NULL) {
                     fn(data, baseInfo, optionBuf);
                 } else {
                     baseInfo->printModule(optionBuf);
                 }
                 baseInfo->destroyOptions(optionBuf);
-                return;
+                return true;
             }
         }
     }
 
-    ffPrintError(line, 0, NULL, FF_PRINT_TYPE_NO_CUSTOM_KEY, "<no implementation provided>");
+    if (data->resultDoc) {
+        yyjson_mut_doc* doc = data->resultDoc;
+        yyjson_mut_val* module = yyjson_mut_arr_add_obj(doc, doc->root);
+        yyjson_mut_obj_add_str(doc, module, "type", line);
+        yyjson_mut_obj_add_str(doc, module, "error", "Unknown module type");
+    } else {
+        ffPrintError(line, 0, NULL, FF_PRINT_TYPE_NO_CUSTOM_KEY, "<no implementation provided>");
+    }
+    return false;
 }
 
 void ffPrintCommandOption(FFdata* data) {

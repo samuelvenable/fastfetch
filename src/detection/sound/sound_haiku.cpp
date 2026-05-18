@@ -7,7 +7,7 @@ extern "C" {
 #include <MediaRoster.h>
 #include <ParameterWeb.h>
 
-const char* ffDetectSound(FFlist* devices /* List of FFSoundDevice */) {
+const char* ffDetectSound(FF_A_UNUSED FFSoundOptions* options, FFlist* devices /* List of FFSoundDevice */) {
     BMediaRoster* roster = BMediaRoster::Roster();
     media_node mediaNode;
     live_node_info liveInfo;
@@ -17,7 +17,7 @@ const char* ffDetectSound(FFlist* devices /* List of FFSoundDevice */) {
         return NULL;
     }
 
-    FFSoundDevice* device = (FFSoundDevice*) ffListAdd(devices);
+    FFSoundDevice* device = FF_LIST_ADD(FFSoundDevice, *devices);
     ffStrbufInit(&device->identifier);
     if (roster->GetDormantNodeFor(mediaNode, &dormantInfo) == B_OK) {
         ffStrbufAppendS(&device->identifier, dormantInfo.name);
@@ -30,8 +30,7 @@ const char* ffDetectSound(FFlist* devices /* List of FFSoundDevice */) {
     ffStrbufInitStatic(&device->platformApi, "MediaKit");
     // We'll check the Mixer actually
     device->volume = 0;
-    device->active = true;
-    device->main = true;
+    device->type = (FFSoundType) (FF_SOUND_TYPE_ACTIVE | FF_SOUND_TYPE_MAIN);
 
     roster->ReleaseNode(mediaNode);
 

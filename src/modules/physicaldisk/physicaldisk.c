@@ -2,7 +2,6 @@
 #include "common/jsonconfig.h"
 #include "common/temps.h"
 #include "common/size.h"
-#include "common/stringUtils.h"
 #include "detection/physicaldisk/physicaldisk.h"
 #include "modules/physicaldisk/physicaldisk.h"
 
@@ -27,7 +26,7 @@ static void formatKey(const FFPhysicalDiskOptions* options, FFPhysicalDiskResult
 }
 
 bool ffPrintPhysicalDisk(FFPhysicalDiskOptions* options) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFPhysicalDiskResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectPhysicalDisk(&result, options);
 
     if (error) {
@@ -35,7 +34,7 @@ bool ffPrintPhysicalDisk(FFPhysicalDiskOptions* options) {
         return false;
     }
 
-    ffListSort(&result, (const void*) sortDevices);
+    ffListSort(&result, sizeof(FFPhysicalDiskResult), (const void*) sortDevices);
 
     uint32_t index = 0;
     FF_STRBUF_AUTO_DESTROY key = ffStrbufCreate();
@@ -46,7 +45,9 @@ bool ffPrintPhysicalDisk(FFPhysicalDiskOptions* options) {
         ffStrbufClear(&buffer);
         ffSizeAppendNum(dev->size, &buffer);
 
-        const char* physicalType = dev->type & FF_PHYSICALDISK_TYPE_HDD
+        const char* physicalType = dev->type & FF_PHYSICALDISK_TYPE_VIRTUAL
+            ? "Virtual"
+            : dev->type & FF_PHYSICALDISK_TYPE_HDD
             ? "HDD"
             : dev->type & FF_PHYSICALDISK_TYPE_SSD
             ? "SSD"
@@ -137,6 +138,32 @@ void ffParsePhysicalDiskJsonObject(FFPhysicalDiskOptions* options, yyjson_val* m
             continue;
         }
 
+        if (unsafe_yyjson_equals_str(key, "hideVirtual")) {
+            if (!yyjson_is_bool(val)) {
+                ffPrintError(FF_PHYSICALDISK_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, "hideVirtual must be a boolean");
+            } else {
+                if (unsafe_yyjson_is_true(val)) {
+                    options->hideType |= FF_PHYSICALDISK_TYPE_VIRTUAL;
+                } else {
+                    options->hideType &= ~FF_PHYSICALDISK_TYPE_VIRTUAL;
+                }
+            }
+            continue;
+        }
+
+        if (unsafe_yyjson_equals_str(key, "hideUnused")) {
+            if (!yyjson_is_bool(val)) {
+                ffPrintError(FF_PHYSICALDISK_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, "hideUnused must be a boolean");
+            } else {
+                if (unsafe_yyjson_is_true(val)) {
+                    options->hideType |= FF_PHYSICALDISK_TYPE_UNUSED;
+                } else {
+                    options->hideType &= ~FF_PHYSICALDISK_TYPE_UNUSED;
+                }
+            }
+            continue;
+        }
+
         if (ffTempsParseJsonObject(key, val, &options->temp, &options->tempConfig)) {
             continue;
         }
@@ -151,10 +178,13 @@ void ffGeneratePhysicalDiskJsonConfig(FFPhysicalDiskOptions* options, yyjson_mut
     yyjson_mut_obj_add_strbuf(doc, module, "namePrefix", &options->namePrefix);
 
     ffTempsGenerateJsonConfig(doc, module, options->temp, options->tempConfig);
+
+    yyjson_mut_obj_add_bool(doc, module, "hideVirtual", !!(options->hideType & FF_PHYSICALDISK_TYPE_VIRTUAL));
+    yyjson_mut_obj_add_bool(doc, module, "hideUnused", !!(options->hideType & FF_PHYSICALDISK_TYPE_UNUSED));
 }
 
 bool ffGeneratePhysicalDiskJsonResult(FFPhysicalDiskOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY result = ffListCreate(sizeof(FFPhysicalDiskResult));
+    FF_LIST_AUTO_DESTROY result = ffListCreate();
     const char* error = ffDetectPhysicalDisk(&result, options);
 
     if (error) {
@@ -169,7 +199,9 @@ bool ffGeneratePhysicalDiskJsonResult(FFPhysicalDiskOptions* options, yyjson_mut
         yyjson_mut_obj_add_strbuf(doc, obj, "devPath", &dev->devPath);
         yyjson_mut_obj_add_strbuf(doc, obj, "interconnect", &dev->interconnect);
 
-        if (dev->type & FF_PHYSICALDISK_TYPE_HDD) {
+        if (dev->type & FF_PHYSICALDISK_TYPE_VIRTUAL) {
+            yyjson_mut_obj_add_str(doc, obj, "kind", "Virtual");
+        } else if (dev->type & FF_PHYSICALDISK_TYPE_HDD) {
             yyjson_mut_obj_add_str(doc, obj, "kind", "HDD");
         } else if (dev->type & FF_PHYSICALDISK_TYPE_SSD) {
             yyjson_mut_obj_add_str(doc, obj, "kind", "SSD");
@@ -196,6 +228,8 @@ bool ffGeneratePhysicalDiskJsonResult(FFPhysicalDiskOptions* options, yyjson_mut
             yyjson_mut_obj_add_null(doc, obj, "readOnly");
         }
 
+        yyjson_mut_obj_add_bool(doc, obj, "unknown", !!(dev->type & FF_PHYSICALDISK_TYPE_UNUSED));
+
         yyjson_mut_obj_add_strbuf(doc, obj, "revision", &dev->revision);
 
         if (dev->temperature != FF_PHYSICALDISK_TEMP_UNSET) {
@@ -221,7 +255,8 @@ void ffInitPhysicalDiskOptions(FFPhysicalDiskOptions* options) {
 
     ffStrbufInit(&options->namePrefix);
     options->temp = false;
-    options->tempConfig = (FFColorRangeConfig) {50, 70};
+    options->tempConfig = (FFColorRangeConfig) { 50, 70 };
+    options->hideType = FF_PHYSICALDISK_TYPE_UNUSED;
 }
 
 void ffDestroyPhysicalDiskOptions(FFPhysicalDiskOptions* options) {
@@ -239,14 +274,15 @@ FFModuleBaseInfo ffPhysicalDiskModuleInfo = {
     .generateJsonResult = (void*) ffGeneratePhysicalDiskJsonResult,
     .generateJsonConfig = (void*) ffGeneratePhysicalDiskJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Device size (formatted)", "size"},
-        {"Device name", "name"},
-        {"Device interconnect type", "interconnect"},
-        {"Device raw file path", "dev-path"},
-        {"Serial number", "serial"},
-        {"Device kind (SSD or HDD)", "physical-type"},
-        {"Device kind (Removable or Fixed)", "removable-type"},
-        {"Device kind (Read-only or Read-write)", "readonly-type"},
-        {"Product revision", "revision"},
-        {"Device temperature (formatted)", "temperature"},
-    }))};
+        { "Device size (formatted)", "size" },
+        { "Device name", "name" },
+        { "Device interconnect type", "interconnect" },
+        { "Device raw file path", "dev-path" },
+        { "Serial number", "serial" },
+        { "Device kind (SSD or HDD)", "physical-type" },
+        { "Device kind (Removable or Fixed)", "removable-type" },
+        { "Device kind (Read-only or Read-write)", "readonly-type" },
+        { "Product revision", "revision" },
+        { "Device temperature (formatted)", "temperature" },
+    }))
+};

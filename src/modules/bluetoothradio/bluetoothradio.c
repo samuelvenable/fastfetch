@@ -89,7 +89,7 @@ static void printDevice(FFBluetoothRadioOptions* options, const FFBluetoothRadio
 }
 
 bool ffPrintBluetoothRadio(FFBluetoothRadioOptions* options) {
-    FF_LIST_AUTO_DESTROY radios = ffListCreate(sizeof(FFBluetoothRadioResult));
+    FF_LIST_AUTO_DESTROY radios = ffListCreate();
     const char* error = ffDetectBluetoothRadio(&radios);
 
     if (error) {
@@ -139,8 +139,8 @@ void ffGenerateBluetoothRadioJsonConfig(FFBluetoothRadioOptions* options, yyjson
     ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
 }
 
-bool ffGenerateBluetoothRadioJsonResult(FF_MAYBE_UNUSED FFBluetoothRadioOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY results = ffListCreate(sizeof(FFBluetoothRadioResult));
+bool ffGenerateBluetoothRadioJsonResult(FF_A_UNUSED FFBluetoothRadioOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
+    FF_LIST_AUTO_DESTROY results = ffListCreate();
 
     const char* error = ffDetectBluetoothRadio(&results);
     if (error) {
@@ -189,7 +189,7 @@ void ffDestroyBluetoothRadioOptions(FFBluetoothRadioOptions* options) {
 
 FFModuleBaseInfo ffBluetoothRadioModuleInfo = {
     .name = FF_BLUETOOTHRADIO_MODULE_NAME,
-    .description = "List bluetooth radios width supported version and vendor",
+    .description = "List Bluetooth radios (supported versions, vendors, etc.)",
     .initOptions = (void*) ffInitBluetoothRadioOptions,
     .destroyOptions = (void*) ffDestroyBluetoothRadioOptions,
     .parseJsonObject = (void*) ffParseBluetoothRadioJsonObject,
@@ -197,12 +197,13 @@ FFModuleBaseInfo ffBluetoothRadioModuleInfo = {
     .generateJsonResult = (void*) ffGenerateBluetoothRadioJsonResult,
     .generateJsonConfig = (void*) ffGenerateBluetoothRadioJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"Radio name for discovering", "name"},
-        {"Address", "address"},
-        {"LMP version", "lmp-version"},
-        {"LMP subversion", "lmp-subversion"},
-        {"Bluetooth version", "version"},
-        {"Vendor", "vendor"},
-        {"Discoverable", "discoverable"},
-        {"Connectable / Pairable", "connectable"},
-    }))};
+        { "Radio name for discovering", "name" },
+        { "Address", "address" },
+        { "LMP version", "lmp-version" },
+        { "LMP subversion", "lmp-subversion" },
+        { "Bluetooth version", "version" },
+        { "Vendor", "vendor" },
+        { "Discoverable", "discoverable" },
+        { "Connectable / Pairable", "connectable" },
+    }))
+};

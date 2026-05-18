@@ -165,15 +165,14 @@ static void printGPUResult(FFGPUOptions* options, uint8_t index, const FFGPUResu
 }
 
 bool ffPrintGPU(FFGPUOptions* options) {
-    FF_LIST_AUTO_DESTROY gpus = ffListCreate(sizeof(FFGPUResult));
+    FF_LIST_AUTO_DESTROY gpus = ffListCreate();
     const char* error = ffDetectGPU(options, &gpus);
     if (error) {
         ffPrintError(FF_GPU_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, "%s", error);
         return false;
     }
 
-    FF_LIST_AUTO_DESTROY selectedGPUs;
-    ffListInitA(&selectedGPUs, sizeof(const FFGPUResult*), gpus.length);
+    FF_LIST_AUTO_DESTROY selectedGPUs = ffListCreateA(sizeof(const FFGPUResult*), gpus.length);
 
     FF_LIST_FOR_EACH (FFGPUResult, gpu, gpus) {
         if (gpu->type == FF_GPU_TYPE_UNKNOWN && options->hideType == FF_GPU_TYPE_UNKNOWN) {
@@ -188,11 +187,13 @@ bool ffPrintGPU(FFGPUOptions* options) {
             continue;
         }
 
-        *(const FFGPUResult**) ffListAdd(&selectedGPUs) = gpu;
+        *FF_LIST_ADD(const FFGPUResult*, selectedGPUs) = gpu;
     }
 
-    for (uint32_t i = 0; i < selectedGPUs.length; i++) {
-        printGPUResult(options, selectedGPUs.length == 1 ? 0 : (uint8_t) (i + 1), *FF_LIST_GET(const FFGPUResult*, selectedGPUs, i));
+    uint32_t i = 0;
+    FF_LIST_FOR_EACH (const FFGPUResult*, pgpu, selectedGPUs) {
+        printGPUResult(options, selectedGPUs.length == 1 ? 0 : (uint8_t) (i + 1), *pgpu);
+        ++i;
     }
 
     if (selectedGPUs.length == 0) {
@@ -230,11 +231,11 @@ void ffParseGPUJsonObject(FFGPUOptions* options, yyjson_val* module) {
         if (unsafe_yyjson_equals_str(key, "detectionMethod")) {
             int value;
             const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                       {"auto", FF_GPU_DETECTION_METHOD_AUTO},
-                                                                       {"pci", FF_GPU_DETECTION_METHOD_PCI},
-                                                                       {"vulkan", FF_GPU_DETECTION_METHOD_VULKAN},
-                                                                       {"opencl", FF_GPU_DETECTION_METHOD_OPENCL},
-                                                                       {"opengl", FF_GPU_DETECTION_METHOD_OPENGL},
+                                                                       { "auto", FF_GPU_DETECTION_METHOD_AUTO },
+                                                                       { "pci", FF_GPU_DETECTION_METHOD_PCI },
+                                                                       { "vulkan", FF_GPU_DETECTION_METHOD_VULKAN },
+                                                                       { "opencl", FF_GPU_DETECTION_METHOD_OPENCL },
+                                                                       { "opengl", FF_GPU_DETECTION_METHOD_OPENGL },
                                                                        {},
                                                                    });
             if (error) {
@@ -251,10 +252,10 @@ void ffParseGPUJsonObject(FFGPUOptions* options, yyjson_val* module) {
             } else {
                 int value;
                 const char* error = ffJsonConfigParseEnum(val, &value, (FFKeyValuePair[]) {
-                                                                           {"none", FF_GPU_TYPE_NONE},
-                                                                           {"unknown", FF_GPU_TYPE_UNKNOWN},
-                                                                           {"integrated", FF_GPU_TYPE_INTEGRATED},
-                                                                           {"discrete", FF_GPU_TYPE_DISCRETE},
+                                                                           { "none", FF_GPU_TYPE_NONE },
+                                                                           { "unknown", FF_GPU_TYPE_UNKNOWN },
+                                                                           { "integrated", FF_GPU_TYPE_INTEGRATED },
+                                                                           { "discrete", FF_GPU_TYPE_DISCRETE },
                                                                            {},
                                                                        });
                 if (error) {
@@ -318,7 +319,7 @@ void ffGenerateGPUJsonConfig(FFGPUOptions* options, yyjson_mut_doc* doc, yyjson_
 }
 
 bool ffGenerateGPUJsonResult(FFGPUOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
-    FF_LIST_AUTO_DESTROY gpus = ffListCreate(sizeof(FFGPUResult));
+    FF_LIST_AUTO_DESTROY gpus = ffListCreate();
     const char* error = ffDetectGPU(options, &gpus);
     if (error) {
         yyjson_mut_obj_add_str(doc, module, "error", error);
@@ -444,8 +445,8 @@ void ffInitGPUOptions(FFGPUOptions* options) {
         ;
     options->temp = false;
     options->hideType = FF_GPU_TYPE_NONE;
-    options->tempConfig = (FFColorRangeConfig) {60, 80};
-    options->percent = (FFPercentageModuleConfig) {50, 80, 0};
+    options->tempConfig = (FFColorRangeConfig) { 60, 80 };
+    options->percent = (FFPercentageModuleConfig) { 50, 80, 0 };
 }
 
 void ffDestroyGPUOptions(FFGPUOptions* options) {
@@ -454,7 +455,7 @@ void ffDestroyGPUOptions(FFGPUOptions* options) {
 
 FFModuleBaseInfo ffGPUModuleInfo = {
     .name = FF_GPU_MODULE_NAME,
-    .description = "Print GPU names, graphic memory size, type, etc",
+    .description = "Print GPU names, memory sizes, types, etc",
     .initOptions = (void*) ffInitGPUOptions,
     .destroyOptions = (void*) ffDestroyGPUOptions,
     .parseJsonObject = (void*) ffParseGPUJsonObject,
@@ -462,25 +463,25 @@ FFModuleBaseInfo ffGPUModuleInfo = {
     .generateJsonResult = (void*) ffGenerateGPUJsonResult,
     .generateJsonConfig = (void*) ffGenerateGPUJsonConfig,
     .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
-        {"GPU vendor", "vendor"},
-        {"GPU name", "name"},
-        {"GPU driver", "driver"},
-        {"GPU temperature", "temperature"},
-        {"GPU core count", "core-count"},
-        {"GPU type", "type"},
-        {"GPU total dedicated memory", "dedicated-total"},
-        {"GPU used dedicated memory", "dedicated-used"},
-        {"GPU total shared memory", "shared-total"},
-        {"GPU used shared memory", "shared-used"},
-        {"The platform API used when detecting the GPU", "platform-api"},
-        {"Current frequency in GHz", "frequency"},
-        {"GPU vendor specific index", "index"},
-        {"Dedicated memory usage percentage num", "dedicated-percentage-num"},
-        {"Dedicated memory usage percentage bar", "dedicated-percentage-bar"},
-        {"Shared memory usage percentage num", "shared-percentage-num"},
-        {"Shared memory usage percentage bar", "shared-percentage-bar"},
-        {"Core usage percentage num", "core-usage-num"},
-        {"Core usage percentage bar", "core-usage-bar"},
-        {"Memory type (Windows only)", "memory-type"},
+        { "GPU vendor", "vendor" },
+        { "GPU name", "name" },
+        { "GPU driver", "driver" },
+        { "GPU temperature", "temperature" },
+        { "GPU core count", "core-count" },
+        { "GPU type", "type" },
+        { "GPU total dedicated memory", "dedicated-total" },
+        { "GPU used dedicated memory", "dedicated-used" },
+        { "GPU total shared memory", "shared-total" },
+        { "GPU used shared memory", "shared-used" },
+        { "The platform API used when detecting the GPU", "platform-api" },
+        { "Current frequency in GHz", "frequency" },
+        { "GPU vendor specific index", "index" },
+        { "Dedicated memory usage percentage num", "dedicated-percentage-num" },
+        { "Dedicated memory usage percentage bar", "dedicated-percentage-bar" },
+        { "Shared memory usage percentage num", "shared-percentage-num" },
+        { "Shared memory usage percentage bar", "shared-percentage-bar" },
+        { "Core usage percentage num", "core-usage-num" },
+        { "Core usage percentage bar", "core-usage-bar" },
+        { "Memory type (Windows only)", "memory-type" },
     })),
 };

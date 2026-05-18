@@ -1,5 +1,5 @@
 #include "board.h"
-#include "common/smbiosHelper.h"
+#include "common/smbios.h"
 
 typedef struct FFSmbiosBaseboard {
     FFSmbiosHeader Header;
@@ -15,7 +15,7 @@ typedef struct FFSmbiosBaseboard {
     uint8_t BoardType;                      // enum
     uint8_t NumberOfContainedObjectHandles; // varies
     uint16_t ContainedObjectHandles[];      // varies
-} __attribute__((__packed__)) FFSmbiosBaseboard;
+} FF_A_PACKED FFSmbiosBaseboard;
 
 static_assert(offsetof(FFSmbiosBaseboard, ContainedObjectHandles) == 0x0F,
     "FFSmbiosBaseboard: Wrong struct alignment");

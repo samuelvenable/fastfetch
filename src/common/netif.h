@@ -3,11 +3,11 @@
 #include "fastfetch.h"
 
 #ifndef _WIN32
-#    include <net/if.h>
-#    include <netinet/in.h>
+    #include <net/if.h>
+    #include <netinet/in.h>
 #endif
 
-typedef enum __attribute__((__packed__)) FFNetifDefaultRouteResultStatus {
+typedef enum FF_A_PACKED FFNetifDefaultRouteResultStatus {
     FF_NETIF_UNINITIALIZED,
     FF_NETIF_INVALID,
     FF_NETIF_OK
