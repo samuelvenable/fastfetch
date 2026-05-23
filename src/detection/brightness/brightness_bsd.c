@@ -3,12 +3,14 @@
 #include "common/io.h"
 #include "common/kmod.h"
 #include "common/debug.h"
+#include "common/time.h"
 
 #include <sys/ioctl.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-#include <dev/iicbus/iic.h>
+#if __has_include(<dev/iicbus/iic.h>)
+    #include <dev/iicbus/iic.h>
 
 const char* detectWithDdcci(FF_A_UNUSED FFBrightnessOptions* options, FFlist* result) {
     // FIXME: doesn't work for me
@@ -30,30 +32,25 @@ const char* detectWithDdcci(FF_A_UNUSED FFBrightnessOptions* options, FFlist* re
             continue;
         }
 
-        uint8_t i2cIn[] = { 0x51, 0x82, 0x01, 0x10 /* luminance */, 0 };
-        i2cIn[4] = 0x6E ^ i2cIn[0] ^ i2cIn[1] ^ i2cIn[2] ^ i2cIn[3];
-        uint8_t i2cOut[12] = {};
-        struct iic_msg msgs[] = {
-            {
-                .slave = 0x6E,
-                .flags = IIC_M_WR,
-                .len = ARRAY_SIZE(i2cIn),
-                .buf = i2cIn
-            },
-            {
-                .slave = 0x6F,
-                .flags = IIC_M_RD,
-                .len = ARRAY_SIZE(i2cOut),
-                .buf = i2cOut
-            }
-        };
+        uint8_t i2cIn[] = { FF_DDC_CI_VCP_COMMAND, FF_DDC_CI_MAKE_HEADER(2), FF_DDC_CI_GET_VCP, FF_DDC_CI_LUMINANCE_OPCODE, 0 };
+        i2cIn[4] = FF_DDC_CI_WRITE_ADDR ^ i2cIn[0] ^ i2cIn[1] ^ i2cIn[2] ^ i2cIn[3];
 
-        int ret = ioctl(fd, I2CRDWR, &(struct iic_rdwr_data) {
-            .msgs = msgs,
-            .nmsgs = ARRAY_SIZE(msgs)
-        });
+        int ret = ioctl(fd, I2CRDWR, &(struct iic_rdwr_data){ .msgs = &(struct iic_msg){ .slave = FF_DDC_CI_WRITE_ADDR, .flags = IIC_M_WR, .len = ARRAY_SIZE(i2cIn), .buf = i2cIn }, .nmsgs = 1 });
         if (ret < 0) {
-            FF_DEBUG("ioctl(/dev/iic%c, I2CRDWR) failed: %s", i, strerror(errno));
+            FF_DEBUG("First ioctl(/dev/iic%c, I2CRDWR) failed: %s", i, strerror(errno));
+            continue;
+        }
+
+        ffTimeSleep(options->ddcciSleep);
+
+        uint8_t i2cOut[12] = {};
+        ret = ioctl(fd, I2CRDWR, &(struct iic_rdwr_data){ .msgs = &(struct iic_msg){ .slave = FF_DDC_CI_READ_ADDR, // LSB will be overridden by kernel to set read bit
+                                                              .flags = IIC_M_RD,
+                                                              .len = ARRAY_SIZE(i2cOut),
+                                                              .buf = i2cOut },
+                                     .nmsgs = 1 });
+        if (ret < 0) {
+            FF_DEBUG("Second ioctl(/dev/iic%c, I2CRDWR) failed: %s", i, strerror(errno));
             continue;
         }
         if (i2cOut[2] != 0x02 || i2cOut[3] != 0x00) {
@@ -75,10 +72,17 @@ const char* detectWithDdcci(FF_A_UNUSED FFBrightnessOptions* options, FFlist* re
     return NULL;
 }
 
+#else
+
+const char* detectWithDdcci(FF_A_UNUSED FFBrightnessOptions* options, FF_A_UNUSED FFlist* result) {
+    FF_DEBUG("DDC/CI support is not available on this system");
+    return "DDC/CI is supported only on FreeBSD";
+}
+
+#endif
+
 #if __has_include(<sys/backlight.h>)
-
     #include <sys/backlight.h>
-
 
 const char* detectWithBacklight(FF_A_UNUSED FFBrightnessOptions* options, FFlist* result) {
     // https://man.freebsd.org/cgi/man.cgi?query=backlight&sektion=9
@@ -132,7 +136,6 @@ const char* detectWithBacklight(FF_A_UNUSED FFBrightnessOptions* options, FF_A_U
 }
 
 #endif
-
 
 const char* ffDetectBrightness(FF_A_UNUSED FFBrightnessOptions* options, FFlist* result) {
     detectWithBacklight(options, result);

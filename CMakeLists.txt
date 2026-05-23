@@ -954,6 +954,7 @@ elseif(APPLE)
         src/common/apple/cf_helpers.c
         src/common/apple/osascript.m
         src/common/apple/smc_temps.c
+        src/common/apple/version.m
         src/detection/battery/battery_apple.c
         src/detection/bluetooth/bluetooth_apple.m
         src/detection/bluetoothradio/bluetoothradio_apple.m
@@ -1340,12 +1341,17 @@ if(WIN32)
     list(APPEND LIBFASTFETCH_SRC src/detection/gpu/gpu_intel.c)
     list(APPEND LIBFASTFETCH_SRC src/detection/gpu/gpu_amd.c)
 
-    include(CheckIncludeFileCXX)
-    CHECK_INCLUDE_FILE_CXX("winrt/Windows.Foundation.h" HAVE_WINRT)
-    if(HAVE_WINRT)
-        message(STATUS "WinRT headers are available, media detection will be enabled")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(STATUS "WinRT support is disabled due to known issues with g++")
+        set(HAVE_WINRT FALSE)
     else()
-        message(WARNING "WinRT headers are NOT available, media detection will be disabled")
+        include(CheckIncludeFileCXX)
+        CHECK_INCLUDE_FILE_CXX("winrt/Windows.Foundation.h" HAVE_WINRT)
+        if(HAVE_WINRT)
+            message(STATUS "WinRT headers are available, media detection will be enabled")
+        else()
+            message(WARNING "WinRT headers are NOT available, media detection will be disabled")
+        endif()
     endif()
 endif()
 include(CheckFunctionExists)
@@ -1544,28 +1550,51 @@ if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
     endif()
 endif()
 
-function(ff_lib_enable VARNAME PKGCONFIG_NAMES CMAKE_NAME)
+function(ff_lib_enable VARNAME PKGCONFIG_NAMES CMAKE_NAME) # [CMAKE_TARGET_NAME]
     if(NOT ENABLE_${VARNAME})
         return()
     endif()
 
     if(PKG_CONFIG_FOUND)
         pkg_search_module(${VARNAME} QUIET ${PKGCONFIG_NAMES})
+        if(${VARNAME}_FOUND)
+            set(${VARNAME}_FOUND "pkg-config")
+        endif()
     endif()
 
     if(NOT ${VARNAME}_FOUND)
         find_package(${CMAKE_NAME} QUIET)
 
         set(${VARNAME}_FOUND ${${CMAKE_NAME}_FOUND})
-        if(${VARNAME} STREQUAL "LUA")
-            # Lua is a special case since its CMake config does not follow the usual pattern
-            set(${VARNAME}_INCLUDE_DIRS ${LUA_INCLUDE_DIR})
-            set(${VARNAME}_LIBRARIES ${LUA_LIBRARY})
-            set(${VARNAME}_CFLAGS_OTHER "")
-        else()
-            set(${VARNAME}_INCLUDE_DIRS ${${CMAKE_NAME}_INCLUDE_DIRS})
-            set(${VARNAME}_LIBRARIES ${${CMAKE_NAME}_LIBRARIES})
-            set(${VARNAME}_CFLAGS_OTHER ${${CMAKE_NAME}_CFLAGS_OTHER})
+        if(${VARNAME}_FOUND)
+            set(${VARNAME}_FOUND "CMake")
+
+            # Some CMake packages (e.g. quickjs) are target-based only and
+            # don't expose *_INCLUDE_DIRS/*_LIBRARIES variables.
+            if(ARGC GREATER 3)
+                set(_FF_CMAKE_TARGET ${ARGV3})
+                if(NOT _FF_CMAKE_TARGET STREQUAL "")
+                    if(NOT DEFINED ${VARNAME}_INCLUDE_DIRS OR "${${VARNAME}_INCLUDE_DIRS}" STREQUAL "")
+                        get_target_property(_FF_CMAKE_TARGET_INCLUDES ${_FF_CMAKE_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+                        if(_FF_CMAKE_TARGET_INCLUDES)
+                            set(${VARNAME}_INCLUDE_DIRS ${_FF_CMAKE_TARGET_INCLUDES})
+                        endif()
+                    endif()
+
+                    if(NOT DEFINED ${VARNAME}_LIBRARIES OR "${${VARNAME}_LIBRARIES}" STREQUAL "")
+                        get_target_property(_FF_CMAKE_TARGET_LIBRARIES ${_FF_CMAKE_TARGET} INTERFACE_LINK_LIBRARIES)
+                        if(_FF_CMAKE_TARGET_LIBRARIES)
+                            set(${VARNAME}_LIBRARIES ${_FF_CMAKE_TARGET_LIBRARIES})
+                        else()
+                            set(${VARNAME}_LIBRARIES ${_FF_CMAKE_TARGET})
+                        endif()
+                    endif()
+                endif()
+            else()
+                set(${VARNAME}_INCLUDE_DIRS ${${CMAKE_NAME}_INCLUDE_DIRS})
+                set(${VARNAME}_LIBRARIES ${${CMAKE_NAME}_LIBRARIES})
+                set(${VARNAME}_CFLAGS_OTHER ${${CMAKE_NAME}_CFLAGS_OTHER})
+            endif()
         endif()
     endif()
 
@@ -1574,7 +1603,7 @@ function(ff_lib_enable VARNAME PKGCONFIG_NAMES CMAKE_NAME)
         return()
     endif()
 
-    message(STATUS "Library: found ${VARNAME}")
+    message(STATUS "Library: found ${VARNAME} by ${${VARNAME}_FOUND}")
 
     target_compile_definitions(libfastfetch PRIVATE FF_HAVE_${VARNAME}=1)
     target_include_directories(libfastfetch PRIVATE ${${VARNAME}_INCLUDE_DIRS})
@@ -1691,21 +1720,37 @@ ff_lib_enable(ELF
     "libelf"
     "libelf"
 )
-ff_lib_enable(LUA
-    "lua"
-    "Lua"
+ff_lib_enable(QUICKJS
+    "qjs"
+    "qjs"
+    "qjs"
 )
-# https://github.com/quickjs-ng/quickjs/discussions/1493#discussioncomment-16955262
-# ff_lib_enable(QUICKJS
-#     "qjs"
-#     "qjs"
-# )
-if(ENABLE_QUICKJS)
-    CHECK_INCLUDE_FILE("quickjs.h" HAVE_QUICKJS)
-    if(HAVE_QUICKJS)
-        target_compile_definitions(libfastfetch PRIVATE FF_HAVE_QUICKJS=1)
+if(ENABLE_LUA)
+    # Lua is a special case since its CMake config does not follow the usual pattern
+    find_package(Lua QUIET)
+    if(Lua_FOUND AND NOT DEFINED Lua_VERSION) # For CMake 4.2- compatible
+        set(Lua_VERSION ${LUA_VERSION_STRING})
+        set(Lua_VERSION_MAJOR ${LUA_VERSION_MAJOR})
+        set(Lua_VERSION_MINOR ${LUA_VERSION_MINOR})
+    endif()
+    if(Lua_FOUND)
+        if((NOT Lua_VERSION_MAJOR EQUAL 5) OR Lua_VERSION_MINOR LESS 3 OR Lua_VERSION_MINOR GREATER 5)
+            message(STATUS "Library: Lua version ${Lua_VERSION} is not supported, requires 5.3-5.5")
+            unset(Lua_FOUND)
+        else()
+            target_compile_definitions(libfastfetch PRIVATE FF_HAVE_LUA=1)
+            target_include_directories(libfastfetch PRIVATE ${LUA_INCLUDE_DIR})
+
+            if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
+                target_link_libraries(libfastfetch PRIVATE ${LUA_LIBRARIES})
+            endif()
+            message(STATUS "Library: found LUA ${Lua_VERSION} by CMake")
+        endif()
+    else()
+        message(STATUS "Library: missing: LUA")
     endif()
 endif()
+
 if(ENABLE_THREADS)
     target_compile_definitions(libfastfetch PRIVATE FF_HAVE_THREADS=1)
     if(CMAKE_USE_PTHREADS_INIT) #Threads::Threads is not set for WIN32
