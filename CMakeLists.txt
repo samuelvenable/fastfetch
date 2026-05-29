@@ -108,12 +108,22 @@ option(ENABLE_WORDEXP "Enable using of wordexp(3) if available, instead of glob(
 option(ENABLE_LUA "Enable lua scripting for format strings" ON)
 option(ENABLE_QUICKJS "Enable quickjs scripting for format strings" ON)
 option(ENABLE_LIBZFS "Enable libzfs" ON)
+option(ENABLE_WCWIDTH "Detect wide-width characters with wcwidth when calculating logo and separator width. Disable for a smaller and slightly faster build, but logos containing CJK/emoji may be measured too narrow and render incorrectly. Such usecases are uncommon." ON)
+set(DEFAULT_STRUCTURE "Title:Separator:OS:Host:Kernel:Uptime:Packages:Shell:Display:DE:WM:WMTheme:Theme:Icons:Font:Cursor:Terminal:TerminalFont:CPU:GPU:Memory:Swap:Disk:LocalIp:Battery:PowerAdapter:Locale:Break:Colors" CACHE STRING "Default module structure for detection")
 if(WIN32 AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     option(ENABLE_WIN81_COMPAT "Enable legacy Windows compatibility (Windows 8.1 and later; Windows 7 unsupported)" ON)
 endif()
 if(APPLE)
     option(ENABLE_APPLE_MEMSIZE_USABLE "Use usable memory size as total memory size in Memory module, to match other systems" OFF)
 endif()
+
+file(GLOB FF_MODULE_DIRS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src/modules" "${CMAKE_CURRENT_SOURCE_DIR}/src/modules/*/")
+foreach(FF_MODULE_DIR ${FF_MODULE_DIRS})
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/modules/${FF_MODULE_DIR}")
+        string(TOUPPER "${FF_MODULE_DIR}" FF_MODULE_UPPER)
+        option(DISABLE_MODULE_${FF_MODULE_UPPER} "Disable module ${FF_MODULE_DIR}" OFF)
+    endif()
+endforeach()
 
 set(BINARY_LINK_TYPE_OPTIONS dlopen dynamic static)
 set(BINARY_LINK_TYPE dlopen CACHE STRING "How to link fastfetch")
@@ -289,14 +299,14 @@ find_package(Python)
 if(Python_FOUND)
     message(STATUS "Minifying 'help.json'")
     execute_process(COMMAND ${Python_EXECUTABLE} -c "import json,sys;json.dump(json.load(sys.stdin),sys.stdout,separators=(',',':'))"
-                    INPUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/data/help.json"
+                    INPUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/doc/help.json"
                     OUTPUT_VARIABLE DATATEXT_JSON_HELP)
     if(DATATEXT_JSON_HELP STREQUAL "")
         message(ERROR "DATATEXT_JSON_HELP is empty, which should not happen!")
     endif()
 else()
     message(WARNING "Python3 is not found, 'help.json' will not be minified")
-    file(READ "src/data/help.json" DATATEXT_JSON_HELP)
+    file(READ "doc/help.json" DATATEXT_JSON_HELP)
 endif()
 
 if(ENABLE_EMBEDDED_PCIIDS AND NOT EXISTS "${PROJECT_BINARY_DIR}/fastfetch_pciids.c.inc")
@@ -356,7 +366,6 @@ else()
 endif()
 
 fastfetch_encode_c_string("${DATATEXT_JSON_HELP}" DATATEXT_JSON_HELP)
-fastfetch_load_text(src/data/structure.txt DATATEXT_STRUCTURE)
 
 configure_file(src/fastfetch_config.h.in fastfetch_config.h @ONLY)
 configure_file(src/fastfetch_datatext.h.in fastfetch_datatext.h @ONLY)
@@ -368,7 +377,7 @@ endif()
 # Ascii image data #
 ####################
 
-file(GLOB LOGO_FILES CONFIGURE_DEPENDS "src/logo/ascii/*.txt")
+file(GLOB LOGO_FILES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/logo/ascii/[a-z_]/*.txt")
 set(LOGO_BUILTIN_H "#pragma once\n#pragma GCC diagnostic ignored \"-Wtrigraphs\"\n\n")
 foreach(file ${LOGO_FILES})
     fastfetch_load_text("${file}" content)
@@ -1355,16 +1364,15 @@ if(WIN32)
     endif()
 endif()
 include(CheckFunctionExists)
-check_function_exists(wcwidth HAVE_WCWIDTH)
-if(NOT HAVE_WCWIDTH)
-    list(APPEND LIBFASTFETCH_SRC src/common/impl/wcwidth.c)
-endif()
 if(NOT WIN32)
     check_function_exists(pipe2 HAVE_PIPE2)
 endif()
 check_function_exists(memrchr HAVE_MEMRCHR)
 if(NOT HAVE_MEMRCHR)
     list(APPEND LIBFASTFETCH_SRC src/common/impl/memrchr.c)
+endif()
+if(ENABLE_WCWIDTH)
+    list(APPEND LIBFASTFETCH_SRC src/common/impl/wcwidth.c)
 endif()
 
 if(ENABLE_SYSTEM_YYJSON)
@@ -1383,6 +1391,15 @@ endif()
 add_library(libfastfetch OBJECT
     ${LIBFASTFETCH_SRC}
 )
+
+foreach(FF_MODULE_DIR ${FF_MODULE_DIRS})
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/modules/${FF_MODULE_DIR}")
+        string(TOUPPER "${FF_MODULE_DIR}" FF_MODULE_UPPER)
+        if(DISABLE_MODULE_${FF_MODULE_UPPER})
+            target_compile_definitions(libfastfetch PUBLIC FF_DISABLE_MODULE_${FF_MODULE_UPPER}=1)
+        endif()
+    endif()
+endforeach()
 
 include(CheckCSourceCompiles)
 check_c_source_compiles("int main(void){int arr[1];return _Countof(arr);}" COMPILER_SUPPORTS_COUNT_OF)
@@ -1515,10 +1532,6 @@ if(FreeBSD OR OpenBSD OR NetBSD)
     target_compile_definitions(libfastfetch PUBLIC _IFI_OQDROPS FF_HAVE_IFI_OQDROPS)
     endif()
     unset(CMAKE_REQUIRED_DEFINITIONS)
-endif()
-
-if(HAVE_WCWIDTH)
-    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_WCWIDTH)
 endif()
 
 if(HAVE_PIPE2)
@@ -1772,6 +1785,9 @@ if(ENABLE_LIBZFS)
             PRIVATE "zfs"
         )
     endif()
+endif()
+if(ENABLE_WCWIDTH)
+    target_compile_definitions(libfastfetch PRIVATE FF_ENABLE_WCWIDTH=1)
 endif()
 if(NOT HAVE_MEMRCHR)
     target_compile_definitions(libfastfetch PRIVATE FF_HAVE_CUSTOM_MEMRCHR=1)
@@ -2083,12 +2099,20 @@ if (BUILD_TESTS)
         PRIVATE libfastfetch
     )
 
+    add_executable(fastfetch-test-strutil
+        tests/strutil.c
+    )
+    target_link_libraries(fastfetch-test-strutil
+        PRIVATE libfastfetch
+    )
+
     enable_testing()
     add_test(NAME test-strbuf COMMAND fastfetch-test-strbuf)
     add_test(NAME test-list COMMAND fastfetch-test-list)
     add_test(NAME test-format COMMAND fastfetch-test-format)
     add_test(NAME test-color COMMAND fastfetch-test-color)
     add_test(NAME test-duration COMMAND fastfetch-test-duration)
+    add_test(NAME test-strutil COMMAND fastfetch-test-strutil)
 endif()
 
 ##################
