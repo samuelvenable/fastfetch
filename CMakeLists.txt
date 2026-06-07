@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12.0) # target_link_libraries with OBJECT libs & project homepage url
 
 project(fastfetch
-    VERSION 2.63.1
+    VERSION 2.64.2
     LANGUAGES C
     DESCRIPTION "Fast neofetch-like system information tool"
     HOMEPAGE_URL "https://github.com/fastfetch-cli/fastfetch"
@@ -74,6 +74,8 @@ cmake_dependent_option(ENABLE_WAYLAND "Enable wayland-client" ON "LINUX OR FreeB
 cmake_dependent_option(ENABLE_XCB_RANDR "Enable xcb-randr" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_XRANDR "Enable xrandr" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DRM "Enable libdrm" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
+cmake_dependent_option(ENABLE_VA "Enable libva" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
+cmake_dependent_option(ENABLE_VDPAU "Enable vdpau" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DRM_AMDGPU "Enable libdrm_amdgpu" ON "LINUX OR FreeBSD OR GNU" OFF)
 cmake_dependent_option(ENABLE_GIO "Enable gio-2.0" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DCONF "Enable dconf" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
@@ -121,7 +123,7 @@ file(GLOB FF_MODULE_DIRS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src/modules" "${C
 foreach(FF_MODULE_DIR ${FF_MODULE_DIRS})
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/modules/${FF_MODULE_DIR}")
         string(TOUPPER "${FF_MODULE_DIR}" FF_MODULE_UPPER)
-        option(DISABLE_MODULE_${FF_MODULE_UPPER} "Disable module ${FF_MODULE_DIR}" OFF)
+        option(MODULE_DISABLE_${FF_MODULE_UPPER} "Disable module ${FF_MODULE_DIR}" OFF)
     endif()
 endforeach()
 
@@ -132,7 +134,25 @@ if(NOT BINARY_LINK_TYPE IN_LIST BINARY_LINK_TYPE_OPTIONS)
     message(FATAL_ERROR "BINARY_LINK_TYPE must be one of ${BINARY_LINK_TYPE_OPTIONS}")
 endif()
 
-set(PACKAGE_MANAGERS AM APPIMAGE APK BREW CHOCO DPKG EMERGE EOPKG FLATPAK GUIX LINGLONG LPKG LPKGBUILD MACPORTS NIX OPKG PACMAN PACSTALL PALUDIS PISI PKG PKGTOOL RPM SCOOP SNAP SOAR SORCERY WINGET XBPS)
+set(PACKAGE_MANAGERS
+    AM APK APPIMAGE
+    BREW
+    CARDS CHOCO
+    DPKG
+    EMERGE EOPKG
+    FLATPAK
+    GUIX
+    HPKG
+    KISS
+    LINGLONG LPKG LPKGBUILD
+    MACPORTS MOSS MPORT
+    NIX
+    OPKG
+    PACMAN PACSTALL PALUDIS PISI PKG PKGSRC PKGTOOL
+    RPM
+    SCOOP SNAP SOAR SORCERY
+    WINGET
+    XBPS)
 foreach(package_manager ${PACKAGE_MANAGERS})
     if(package_manager STREQUAL "WINGET")
         option(PACKAGES_DISABLE_${package_manager} "Disable ${package_manager} package manager detection by default" ON)
@@ -140,6 +160,7 @@ foreach(package_manager ${PACKAGE_MANAGERS})
         option(PACKAGES_DISABLE_${package_manager} "Disable ${package_manager} package manager detection by default" OFF)
     endif()
 endforeach()
+option(PACKAGES_REMOVE_DISABLED "Remove disabled package managers from the build entirely, instead of just skipping them at runtime" OFF)
 
 if (LINUX)
     set(CUSTOM_PCI_IDS_PATH "" CACHE STRING "Custom path to file pci.ids, defaults to `/usr/share/hwdata/pci.ids`")
@@ -400,6 +421,7 @@ set(LIBFASTFETCH_SRC
     src/common/impl/init.c
     src/common/impl/jsonconfig.c
     src/common/impl/library.c
+    src/common/impl/lua.c
     src/common/impl/netif.c
     src/common/impl/networking_common.c
     src/common/impl/option.c
@@ -418,9 +440,12 @@ set(LIBFASTFETCH_SRC
     src/common/impl/path.c
     src/common/impl/FFPlatform.c
     src/common/impl/smbios.c
+    src/common/impl/strutil.c
     src/detection/bluetoothradio/bluetoothradio.c
     src/detection/bootmgr/bootmgr.c
     src/detection/chassis/chassis.c
+    src/detection/codec/codec.c
+    src/detection/codec/codec_vulkan.c
     src/detection/cpu/cpu.c
     src/detection/cpuusage/cpuusage.c
     src/detection/command/command.c
@@ -462,6 +487,7 @@ set(LIBFASTFETCH_SRC
     src/modules/btrfs/btrfs.c
     src/modules/camera/camera.c
     src/modules/chassis/chassis.c
+    src/modules/codec/codec.c
     src/modules/colors/colors.c
     src/modules/cpu/cpu.c
     src/modules/cpucache/cpucache.c
@@ -548,6 +574,7 @@ if(LINUX)
         src/detection/brightness/brightness_linux.c
         src/detection/btrfs/btrfs_linux.c
         src/detection/chassis/chassis_linux.c
+        src/detection/codec/codec_linux.c
         src/detection/cpu/cpu_linux.c
         src/detection/cpucache/cpucache_linux.c
         src/detection/cpuusage/cpuusage_linux.c
@@ -635,6 +662,7 @@ elseif(ANDROID)
         src/detection/brightness/brightness_nosupport.c
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_nosupport.c
+        src/detection/codec/codec_android.c
         src/detection/cpu/cpu_linux.c
         src/detection/cpucache/cpucache_linux.c
         src/detection/cursor/cursor_linux.c
@@ -709,6 +737,7 @@ elseif(FreeBSD)
         src/detection/brightness/brightness_bsd.c
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_bsd.c
+        src/detection/codec/codec_linux.c
         src/detection/cpu/cpu_bsd.c
         src/detection/cpucache/cpucache_shared.c
         src/detection/cpuusage/cpuusage_bsd.c
@@ -803,6 +832,7 @@ elseif(NetBSD)
         src/detection/brightness/brightness_nbsd.c
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_nbsd.c
+        src/detection/codec/codec_linux.c
         src/detection/cpu/cpu_nbsd.c
         src/detection/cpucache/cpucache_shared.c
         src/detection/cpuusage/cpuusage_bsd.c
@@ -887,6 +917,7 @@ elseif(OpenBSD)
         src/detection/brightness/brightness_obsd.c
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_windows.c
+        src/detection/codec/codec_linux.c
         src/detection/cpu/cpu_obsd.c
         src/detection/cpucache/cpucache_shared.c
         src/detection/cpuusage/cpuusage_bsd.c
@@ -970,6 +1001,7 @@ elseif(APPLE)
         src/detection/bootmgr/bootmgr_apple.c
         src/detection/brightness/brightness_apple.c
         src/detection/btrfs/btrfs_nosupport.c
+        src/detection/codec/codec_apple.c
         src/detection/cpu/cpu_apple.c
         src/detection/cpucache/cpucache_apple.c
         src/detection/cpuusage/cpuusage_apple.c
@@ -1060,6 +1092,7 @@ elseif(WIN32)
         src/detection/brightness/brightness_windows.c
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_windows.c
+        src/detection/codec/codec_windows.cpp
         src/detection/cpu/cpu_windows.c
         src/detection/cpucache/cpucache_windows.c
         src/detection/cpuusage/cpuusage_windows.c
@@ -1131,6 +1164,7 @@ elseif(SunOS)
         src/detection/cursor/cursor_linux.c
         src/detection/bluetooth/bluetooth_nosupport.c
         src/detection/bluetoothradio/bluetoothradio_nosupport.c
+        src/detection/codec/codec_linux.c
         src/detection/disk/disk_sunos.c
         src/detection/dns/dns_linux.c
         src/detection/physicaldisk/physicaldisk_sunos.c
@@ -1204,8 +1238,8 @@ elseif(Haiku)
         src/detection/battery/battery_haiku.c
         src/detection/bios/bios_windows.c
         src/detection/board/board_windows.c
-        src/detection/bootmgr/bootmgr_nosupport.c
-        src/detection/brightness/brightness_nosupport.c
+        src/detection/bootmgr/bootmgr_haiku.cpp
+        src/detection/brightness/brightness_haiku.cpp
         src/detection/btrfs/btrfs_nosupport.c
         src/detection/chassis/chassis_windows.c
         src/detection/cpu/cpu_haiku.c
@@ -1214,6 +1248,7 @@ elseif(Haiku)
         src/detection/cursor/cursor_nosupport.c
         src/detection/bluetooth/bluetooth_haiku.cpp
         src/detection/bluetoothradio/bluetoothradio_nosupport.c
+        src/detection/codec/codec_linux.c
         src/detection/disk/disk_haiku.cpp
         src/detection/dns/dns_linux.c
         src/detection/physicaldisk/physicaldisk_haiku.c
@@ -1257,7 +1292,7 @@ elseif(Haiku)
         src/detection/wifi/wifi_nosupport.c
         src/detection/wm/wm_nosupport.c
         src/detection/de/de_nosupport.c
-        src/detection/wmtheme/wmtheme_nosupport.c
+        src/detection/wmtheme/wmtheme_haiku.cpp
         src/detection/camera/camera_nosupport.c
     )
 elseif(GNU)
@@ -1283,6 +1318,7 @@ elseif(GNU)
         src/detection/cursor/cursor_linux.c
         src/detection/bluetooth/bluetooth_linux.c
         src/detection/bluetoothradio/bluetoothradio_linux.c
+        src/detection/codec/codec_linux.c
         src/detection/disk/disk_linux.c
         src/detection/dns/dns_linux.c
         src/detection/physicaldisk/physicaldisk_nosupport.c
@@ -1395,8 +1431,8 @@ add_library(libfastfetch OBJECT
 foreach(FF_MODULE_DIR ${FF_MODULE_DIRS})
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/modules/${FF_MODULE_DIR}")
         string(TOUPPER "${FF_MODULE_DIR}" FF_MODULE_UPPER)
-        if(DISABLE_MODULE_${FF_MODULE_UPPER})
-            target_compile_definitions(libfastfetch PUBLIC FF_DISABLE_MODULE_${FF_MODULE_UPPER}=1)
+        if(MODULE_DISABLE_${FF_MODULE_UPPER})
+            target_compile_definitions(libfastfetch PUBLIC FF_MODULE_DISABLE_${FF_MODULE_UPPER}=1)
         endif()
     endif()
 endforeach()
@@ -1540,24 +1576,24 @@ endif()
 
 if(NOT "${CUSTOM_PCI_IDS_PATH}" STREQUAL "")
     message(STATUS "Custom file path of pci.ids: ${CUSTOM_PCI_IDS_PATH}")
-    target_compile_definitions(libfastfetch PRIVATE FF_CUSTOM_PCI_IDS_PATH=${CUSTOM_PCI_IDS_PATH})
+    target_compile_definitions(libfastfetch PUBLIC FF_CUSTOM_PCI_IDS_PATH=${CUSTOM_PCI_IDS_PATH})
 endif()
 if(NOT "${CUSTOM_AMDGPU_IDS_PATH}" STREQUAL "")
     message(STATUS "Custom file path of amdgpu.ids: ${CUSTOM_AMDGPU_IDS_PATH}")
-    target_compile_definitions(libfastfetch PRIVATE FF_CUSTOM_AMDGPU_IDS_PATH=${CUSTOM_AMDGPU_IDS_PATH})
+    target_compile_definitions(libfastfetch PUBLIC FF_CUSTOM_AMDGPU_IDS_PATH=${CUSTOM_AMDGPU_IDS_PATH})
 endif()
 if(NOT "${CUSTOM_OS_RELEASE_PATH}" STREQUAL "")
     message(STATUS "Custom file path of os_release: ${CUSTOM_OS_RELEASE_PATH}")
-    target_compile_definitions(libfastfetch PRIVATE FF_CUSTOM_OS_RELEASE_PATH=${CUSTOM_OS_RELEASE_PATH})
+    target_compile_definitions(libfastfetch PUBLIC FF_CUSTOM_OS_RELEASE_PATH=${CUSTOM_OS_RELEASE_PATH})
 endif()
 if(NOT "${CUSTOM_LSB_RELEASE_PATH}" STREQUAL "")
     message(STATUS "Custom file path of lsb_release: ${CUSTOM_LSB_RELEASE_PATH}")
-    target_compile_definitions(libfastfetch PRIVATE FF_CUSTOM_LSB_RELEASE_PATH=${CUSTOM_LSB_RELEASE_PATH})
+    target_compile_definitions(libfastfetch PUBLIC FF_CUSTOM_LSB_RELEASE_PATH=${CUSTOM_LSB_RELEASE_PATH})
 endif()
 
 if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
     message(STATUS "Enabling custom link type: ${BINARY_LINK_TYPE}")
-    target_compile_definitions(libfastfetch PRIVATE FF_DISABLE_DLOPEN=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_DISABLE_DLOPEN=1)
     if(NOT WIN32)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--copy-dt-needed-entries")
     endif()
@@ -1602,6 +1638,11 @@ function(ff_lib_enable VARNAME PKGCONFIG_NAMES CMAKE_NAME) # [CMAKE_TARGET_NAME]
                             set(${VARNAME}_LIBRARIES ${_FF_CMAKE_TARGET})
                         endif()
                     endif()
+
+                    if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
+                        # INTERFACE_LINK_LIBRARIES doesn't expose libvarname.a
+                        target_link_libraries(libfastfetch PRIVATE ${_FF_CMAKE_TARGET})
+                    endif()
                 endif()
             else()
                 set(${VARNAME}_INCLUDE_DIRS ${${CMAKE_NAME}_INCLUDE_DIRS})
@@ -1618,18 +1659,18 @@ function(ff_lib_enable VARNAME PKGCONFIG_NAMES CMAKE_NAME) # [CMAKE_TARGET_NAME]
 
     message(STATUS "Library: found ${VARNAME} by ${${VARNAME}_FOUND}")
 
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_${VARNAME}=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_${VARNAME}=1)
     target_include_directories(libfastfetch PRIVATE ${${VARNAME}_INCLUDE_DIRS})
 
     if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
-        target_link_directories(libfastfetch PUBLIC ${${VARNAME}_LIBRARY_DIRS})
+        target_link_directories(libfastfetch PRIVATE ${${VARNAME}_LIBRARY_DIRS})
         target_link_libraries(libfastfetch PRIVATE ${${VARNAME}_LIBRARIES})
     endif()
 
     foreach(FLAG ${${VARNAME}_CFLAGS_OTHER})
         if(FLAG MATCHES "-D.*")
             string(SUBSTRING ${FLAG} 2 -1 FLAG)
-            target_compile_definitions(libfastfetch PRIVATE ${FLAG})
+            target_compile_definitions(libfastfetch PUBLIC ${FLAG})
         endif()
     endforeach()
 endfunction()
@@ -1653,6 +1694,14 @@ ff_lib_enable(XRANDR
 ff_lib_enable(DRM
     "libdrm"
     "Libdrm"
+)
+ff_lib_enable(VA
+    "libva-drm"
+    "Libva-drm"
+)
+ff_lib_enable(VDPAU
+    "vdpau"
+    "vdpau"
 )
 ff_lib_enable(DRM_AMDGPU
     "libdrm_amdgpu"
@@ -1751,8 +1800,8 @@ if(ENABLE_LUA)
             message(STATUS "Library: Lua version ${Lua_VERSION} is not supported, requires 5.3-5.5")
             unset(Lua_FOUND)
         else()
-            target_compile_definitions(libfastfetch PRIVATE FF_HAVE_LUA=1)
-            target_include_directories(libfastfetch PRIVATE ${LUA_INCLUDE_DIR})
+            target_compile_definitions(libfastfetch PUBLIC FF_HAVE_LUA=1)
+            target_include_directories(libfastfetch PUBLIC ${LUA_INCLUDE_DIR})
 
             if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
                 target_link_libraries(libfastfetch PRIVATE ${LUA_LIBRARIES})
@@ -1765,20 +1814,20 @@ if(ENABLE_LUA)
 endif()
 
 if(ENABLE_THREADS)
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_THREADS=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_THREADS=1)
     if(CMAKE_USE_PTHREADS_INIT) #Threads::Threads is not set for WIN32
         target_link_libraries(libfastfetch PRIVATE Threads::Threads)
     endif()
 endif()
 
 if(ENABLE_EMBEDDED_PCIIDS)
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_EMBEDDED_PCIIDS=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_EMBEDDED_PCIIDS=1)
 endif()
 if(ENABLE_EMBEDDED_AMDGPUIDS)
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_EMBEDDED_AMDGPUIDS=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_EMBEDDED_AMDGPUIDS=1)
 endif()
 if(ENABLE_LIBZFS)
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_LIBZFS=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_LIBZFS=1)
 
     if(NOT BINARY_LINK_TYPE STREQUAL "dlopen")
         target_link_libraries(libfastfetch
@@ -1787,10 +1836,10 @@ if(ENABLE_LIBZFS)
     endif()
 endif()
 if(ENABLE_WCWIDTH)
-    target_compile_definitions(libfastfetch PRIVATE FF_ENABLE_WCWIDTH=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_ENABLE_WCWIDTH=1)
 endif()
 if(NOT HAVE_MEMRCHR)
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_CUSTOM_MEMRCHR=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_CUSTOM_MEMRCHR=1)
 endif()
 
 if(LINUX)
@@ -1820,6 +1869,7 @@ elseif(APPLE)
         PRIVATE "-framework OpenGL"
         PRIVATE "-framework OpenCL"
         PRIVATE "-framework SystemConfiguration"
+        PRIVATE "-framework VideoToolbox"
         PRIVATE "-weak_framework CoreDisplay"
 
         PRIVATE "-F /System/Library/PrivateFrameworks"
@@ -1934,7 +1984,7 @@ target_link_libraries(libfastfetch
     PRIVATE ${CMAKE_DL_LIBS}
 )
 
-target_compile_options(libfastfetch PRIVATE
+target_compile_options(libfastfetch PUBLIC
     $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions -fno-rtti>)
 
 if(FreeBSD)
@@ -1943,18 +1993,18 @@ endif()
 if(LINUX OR FreeBSD OR OpenBSD OR NetBSD)
     CHECK_INCLUDE_FILE("linux/videodev2.h" HAVE_LINUX_VIDEODEV2)
     if(HAVE_LINUX_VIDEODEV2)
-        target_compile_definitions(libfastfetch PRIVATE FF_HAVE_LINUX_VIDEODEV2=1)
+        target_compile_definitions(libfastfetch PUBLIC FF_HAVE_LINUX_VIDEODEV2=1)
     endif()
 endif()
 if(NOT WIN32)
     CHECK_INCLUDE_FILE("utmpx.h" HAVE_UTMPX)
     if(HAVE_UTMPX)
-        target_compile_definitions(libfastfetch PRIVATE FF_HAVE_UTMPX=1)
+        target_compile_definitions(libfastfetch PUBLIC FF_HAVE_UTMPX=1)
     endif()
     if(ENABLE_WORDEXP)
         CHECK_INCLUDE_FILE("wordexp.h" HAVE_WORDEXP)
         if(HAVE_WORDEXP)
-            target_compile_definitions(libfastfetch PRIVATE FF_HAVE_WORDEXP=1)
+            target_compile_definitions(libfastfetch PUBLIC FF_HAVE_WORDEXP=1)
             message(STATUS "wordexp.h found, wordexp support enabled")
         else()
             set(ENABLE_WORDEXP OFF)
@@ -1966,19 +2016,19 @@ if(NOT WIN32)
     if(ENABLE_THREADS AND CMAKE_USE_PTHREADS_INIT)
         CHECK_INCLUDE_FILE("pthread_np.h" HAVE_PTHREAD_NP)
         if(HAVE_PTHREAD_NP)
-            target_compile_definitions(libfastfetch PRIVATE FF_HAVE_PTHREAD_NP=1)
+            target_compile_definitions(libfastfetch PUBLIC FF_HAVE_PTHREAD_NP=1)
             set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} pthread_np.h)
         endif()
         set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} Threads::Threads)
         check_function_exists("pthread_timedjoin_np" HAVE_TIMEDJOIN_NP)
         if(HAVE_TIMEDJOIN_NP)
-            target_compile_definitions(libfastfetch PRIVATE FF_HAVE_TIMEDJOIN_NP=1)
+            target_compile_definitions(libfastfetch PUBLIC FF_HAVE_TIMEDJOIN_NP=1)
         else()
             message(WARNING "pthread_timedjoin_np was not found; networking timeout will not work")
         endif()
     endif()
 elseif(HAVE_WINRT)
-    target_compile_definitions(libfastfetch PRIVATE FF_HAVE_WINRT=1)
+    target_compile_definitions(libfastfetch PUBLIC FF_HAVE_WINRT=1)
 endif()
 
 set(PACKAGES_DISABLE_LIST "")
@@ -1995,7 +2045,10 @@ else()
     list(TRANSFORM PACKAGES_DISABLE_LIST APPEND "_BIT")
     list(JOIN PACKAGES_DISABLE_LIST " | " PACKAGES_DISABLE_LIST)
 endif()
-target_compile_definitions(libfastfetch PRIVATE FF_PACKAGES_DISABLE_LIST=${PACKAGES_DISABLE_LIST})
+target_compile_definitions(libfastfetch PUBLIC "FF_PACKAGES_DISABLE_LIST=${PACKAGES_DISABLE_LIST}")
+if(PACKAGES_REMOVE_DISABLED)
+    target_compile_definitions(libfastfetch PUBLIC FF_PACKAGES_REMOVE_DISABLED=1)
+endif()
 
 ######################
 # Executable targets #

@@ -292,6 +292,34 @@ static const FFlogo O[] = {
         .names = { "openwrt" },
         .lines = FASTFETCH_DATATEXT_LOGO_OPENWRT,
         .colors = {
+            FF_COLOR_FG_DEFAULT,
+            FF_COLOR_FG_BLUE,
+        },
+        .colorKeys = FF_COLOR_FG_BLUE,
+        .colorTitle = FF_COLOR_FG_DEFAULT,
+    },
+    #endif
+    #ifdef FASTFETCH_DATATEXT_LOGO_OPENWRT_SMALL
+    // OpenWrtSmall
+    {
+        .names = { "openwrt_small" },
+        .type = FF_LOGO_LINE_TYPE_SMALL_BIT,
+        .lines = FASTFETCH_DATATEXT_LOGO_OPENWRT_SMALL,
+        .colors = {
+            FF_COLOR_FG_DEFAULT,
+            FF_COLOR_FG_BLUE,
+        },
+        .colorKeys = FF_COLOR_FG_BLUE,
+        .colorTitle = FF_COLOR_FG_DEFAULT,
+    },
+    #endif
+    #ifdef FASTFETCH_DATATEXT_LOGO_OPENWRT_OLD
+    // OpenWrtOld
+    {
+        .names = { "openwrt_old" },
+        .type = FF_LOGO_LINE_TYPE_ALTER_BIT,
+        .lines = FASTFETCH_DATATEXT_LOGO_OPENWRT_OLD,
+        .colors = {
             FF_COLOR_FG_BLUE,
         },
         .colorKeys = FF_COLOR_FG_BLUE,
@@ -359,6 +387,33 @@ static const FFlogo O[] = {
             FF_COLOR_FG_DEFAULT,
             FF_COLOR_FG_DEFAULT,
         },
+    },
+    #endif
+    #ifdef FASTFETCH_DATATEXT_LOGO_ORIGAMI
+    // Origami
+    {
+        .names = { "Origami" },
+        .lines = FASTFETCH_DATATEXT_LOGO_ORIGAMI,
+        .colors = {
+            FF_COLOR_FG_RGB "185;210;235",   // $1 sail — light sky blue
+            FF_COLOR_FG_RGB "40;90;160",     // $2 hull — deeper navy
+        },
+        .colorKeys = FF_COLOR_FG_BLUE,
+        .colorTitle = FF_COLOR_FG_DEFAULT,
+    },
+    #endif
+    #ifdef FASTFETCH_DATATEXT_LOGO_ORIGAMI_SMALL
+    // OrigamiSmall
+    {
+        .names = { "Origami_small" },
+        .type = FF_LOGO_LINE_TYPE_SMALL_BIT,
+        .lines = FASTFETCH_DATATEXT_LOGO_ORIGAMI_SMALL,
+        .colors = {
+            FF_COLOR_FG_RGB "185;210;235",   // $1 sail — light sky blue
+            FF_COLOR_FG_RGB "40;90;160",     // $2 hull — deeper navy
+        },
+        .colorKeys = FF_COLOR_FG_BLUE,
+        .colorTitle = FF_COLOR_FG_DEFAULT,
     },
     #endif
     #ifdef FASTFETCH_DATATEXT_LOGO_OS2WARP

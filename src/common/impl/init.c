@@ -29,7 +29,7 @@ static void initState(FFstate* state) {
     ffPlatformInit(&state->platform);
     state->dynamicInterval = 0;
 
-    #if !FF_DISABLE_MODULE_TERMINALTHEME
+    #if !FF_MODULE_DISABLE_TERMINALTHEME
     {
         // don't enable bright color if the terminal is in light mode
         FFTerminalThemeResult result;
@@ -262,6 +262,12 @@ void ffListFeatures(void) {
 #if FF_HAVE_LIBZFS
         "libzfs\n"
 #endif
+#if FF_HAVE_VA
+        "va\n"
+#endif
+#if FF_HAVE_VDPAU
+        "vdpau\n"
+#endif
 #if FF_USE_SYSTEM_YYJSON
         "System yyjson\n"
 #endif
@@ -270,6 +276,9 @@ void ffListFeatures(void) {
 #endif
 #if FF_HAVE_EMBEDDED_PCIIDS
         "Embedded pciids\n"
+#endif
+#if FF_ENABLE_WCWIDTH
+        "Embedded wcwidth\n"
 #endif
 #if FF_HAVE_WINRT
         "WinRT headers\n"
