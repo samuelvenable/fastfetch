@@ -63,6 +63,13 @@ endif()
 
 include(CheckIncludeFile)
 
+if(LINUX)
+    CHECK_INCLUDE_FILE("linux/version.h" HAVE_LINUX_VERSION_H)
+    if(NOT HAVE_LINUX_VERSION_H)
+        message(FATAL_ERROR "Linux headers (linux/version.h) not found! Please install linux-headers package.")
+    endif()
+endif()
+
 #####################
 # Configure options #
 #####################
@@ -76,7 +83,6 @@ cmake_dependent_option(ENABLE_XRANDR "Enable xrandr" ON "LINUX OR FreeBSD OR Ope
 cmake_dependent_option(ENABLE_DRM "Enable libdrm" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_VA "Enable libva" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_VDPAU "Enable vdpau" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
-cmake_dependent_option(ENABLE_DRM_AMDGPU "Enable libdrm_amdgpu" ON "LINUX OR FreeBSD OR GNU" OFF)
 cmake_dependent_option(ENABLE_GIO "Enable gio-2.0" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DCONF "Enable dconf" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_EET "Enable eet" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
@@ -766,6 +772,7 @@ elseif(FreeBSD)
         src/detection/gpu/gpu_bsd.c
         src/detection/gpu/gpu_drm.c
         src/detection/gpu/gpu_pci.c
+        src/detection/gpu/gpu_bsddrm.c
         src/detection/gtk_qt/gtk.c
         src/detection/host/host_bsd.c
         src/detection/lm/lm_linux.c
@@ -945,6 +952,8 @@ elseif(OpenBSD)
         src/detection/font/font_linux.c
         src/detection/gpu/gpu_pci.c
         src/detection/gpu/gpu_obsd.c
+        src/detection/gpu/gpu_drm.c
+        src/detection/gpu/gpu_bsddrm.c
         src/detection/gtk_qt/gtk.c
         src/detection/host/host_obsd.c
         src/detection/lm/lm_nosupport.c
@@ -1703,10 +1712,6 @@ ff_lib_enable(VA
 ff_lib_enable(VDPAU
     "vdpau"
     "vdpau"
-)
-ff_lib_enable(DRM_AMDGPU
-    "libdrm_amdgpu"
-    "Libdrm_Amdgpu"
 )
 ff_lib_enable(GIO
     "gio-2.0"
