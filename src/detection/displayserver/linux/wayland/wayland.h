@@ -16,7 +16,6 @@ static inline uint32_t min(uint32_t a, uint32_t b) {
 typedef enum FF_A_PACKED WaylandProtocolType {
     FF_WAYLAND_PROTOCOL_TYPE_NONE,
     FF_WAYLAND_PROTOCOL_TYPE_GLOBAL,
-    FF_WAYLAND_PROTOCOL_TYPE_ZWLR,
     FF_WAYLAND_PROTOCOL_TYPE_KDE,
 } WaylandProtocolType;
 
@@ -27,10 +26,10 @@ typedef struct WaylandData {
     FF_LIBRARY_SYMBOL(wl_proxy_destroy)
     FF_LIBRARY_SYMBOL(wl_display_roundtrip)
     struct wl_display* display;
-    const struct wl_interface* ffwl_output_interface;
     WaylandProtocolType protocolType;
     uint64_t primaryDisplayId;
     struct wl_proxy* zxdgOutputManager;
+    struct wl_proxy* wpColorManager;
 } WaylandData;
 
 typedef struct WaylandDisplay {
@@ -81,9 +80,9 @@ void ffWaylandOutputDescriptionListener(void* data, FF_A_UNUSED void* output, co
 uint32_t ffWaylandHandleRotation(WaylandDisplay* display);
 
 const char* ffWaylandHandleGlobalOutput(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version);
-const char* ffWaylandHandleZwlrOutput(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version);
 const char* ffWaylandHandleKdeOutput(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version);
 const char* ffWaylandHandleKdeOutputOrder(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version);
 const char* ffWaylandHandleZxdgOutput(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version);
+const char* ffWaylandHandleWpColor(WaylandData* wldata, struct wl_registry* registry, uint32_t name, uint32_t version);
 
 #endif
