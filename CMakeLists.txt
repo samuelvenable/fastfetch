@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12.0) # target_link_libraries with OBJECT libs & project homepage url
 
 project(fastfetch
-    VERSION 2.64.2
+    VERSION 2.65.1
     LANGUAGES C
     DESCRIPTION "Fast neofetch-like system information tool"
     HOMEPAGE_URL "https://github.com/fastfetch-cli/fastfetch"
@@ -81,7 +81,8 @@ cmake_dependent_option(ENABLE_WAYLAND "Enable wayland-client" ON "LINUX OR FreeB
 cmake_dependent_option(ENABLE_XCB_RANDR "Enable xcb-randr" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_XRANDR "Enable xrandr" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DRM "Enable libdrm" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
-cmake_dependent_option(ENABLE_VA "Enable libva" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
+cmake_dependent_option(ENABLE_VADRM "Enable libva-drm" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
+cmake_dependent_option(ENABLE_VAX11 "Enable libva-x11" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_VDPAU "Enable vdpau" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_GIO "Enable gio-2.0" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
 cmake_dependent_option(ENABLE_DCONF "Enable dconf" ON "LINUX OR FreeBSD OR OpenBSD OR NetBSD OR ANDROID OR SunOS OR GNU" OFF)
@@ -140,25 +141,10 @@ if(NOT BINARY_LINK_TYPE IN_LIST BINARY_LINK_TYPE_OPTIONS)
     message(FATAL_ERROR "BINARY_LINK_TYPE must be one of ${BINARY_LINK_TYPE_OPTIONS}")
 endif()
 
-set(PACKAGE_MANAGERS
-    AM APK APPIMAGE
-    BREW
-    CARDS CHOCO
-    DPKG
-    EMERGE EOPKG
-    FLATPAK
-    GUIX
-    HPKG
-    KISS
-    LINGLONG LPKG LPKGBUILD
-    MACPORTS MOSS MPORT
-    NIX
-    OPKG
-    PACMAN PACSTALL PALUDIS PISI PKG PKGSRC PKGTOOL
-    RPM
-    SCOOP SNAP SOAR SORCERY
-    WINGET
-    XBPS)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/modules/packages/option.h" PACKAGE_MANAGERS)
+string(REGEX MATCHALL "FF_PACKAGES_FLAG_[A-Z]+_BIT" PACKAGE_MANAGERS "${PACKAGE_MANAGERS}")
+string(REGEX REPLACE "FF_PACKAGES_FLAG_([A-Z]+)_BIT" "\\1" PACKAGE_MANAGERS "${PACKAGE_MANAGERS}")
+list(SORT PACKAGE_MANAGERS)
 foreach(package_manager ${PACKAGE_MANAGERS})
     if(package_manager STREQUAL "WINGET")
         option(PACKAGES_DISABLE_${package_manager} "Disable ${package_manager} package manager detection by default" ON)
@@ -333,7 +319,7 @@ if(Python_FOUND)
     endif()
 else()
     message(WARNING "Python3 is not found, 'help.json' will not be minified")
-    file(READ "doc/help.json" DATATEXT_JSON_HELP)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/doc/help.json" DATATEXT_JSON_HELP)
 endif()
 
 if(ENABLE_EMBEDDED_PCIIDS AND NOT EXISTS "${PROJECT_BINARY_DIR}/fastfetch_pciids.c.inc")
@@ -602,7 +588,6 @@ if(LINUX)
         src/detection/displayserver/linux/wayland/wp-color-management-v1-protocol.c
         src/detection/displayserver/linux/wayland/kde-output.c
         src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
-        src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
         src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
         src/detection/displayserver/linux/wmde.c
         src/detection/displayserver/linux/xcb.c
@@ -763,7 +748,6 @@ elseif(FreeBSD)
         src/detection/displayserver/linux/wayland/wl-output-protocol.c
         src/detection/displayserver/linux/wayland/wp-color-management-v1-protocol.c
         src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
-        src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
         src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
         src/detection/displayserver/linux/wmde.c
         src/detection/displayserver/linux/xcb.c
@@ -859,7 +843,6 @@ elseif(NetBSD)
         src/detection/displayserver/linux/wayland/wl-output-protocol.c
         src/detection/displayserver/linux/wayland/wp-color-management-v1-protocol.c
         src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
-        src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
         src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
         src/detection/displayserver/linux/wmde.c
         src/detection/displayserver/linux/xcb.c
@@ -944,7 +927,6 @@ elseif(OpenBSD)
         src/detection/displayserver/linux/wayland/wl-output-protocol.c
         src/detection/displayserver/linux/wayland/wp-color-management-v1-protocol.c
         src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
-        src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
         src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
         src/detection/displayserver/linux/wmde.c
         src/detection/displayserver/linux/xcb.c
@@ -1189,7 +1171,6 @@ elseif(SunOS)
         src/detection/displayserver/linux/wayland/wl-output-protocol.c
         src/detection/displayserver/linux/wayland/wp-color-management-v1-protocol.c
         src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
-        src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
         src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
         src/detection/displayserver/linux/wmde.c
         src/detection/displayserver/linux/xcb.c
@@ -1702,9 +1683,13 @@ ff_lib_enable(DRM
     "libdrm"
     "Libdrm"
 )
-ff_lib_enable(VA
+ff_lib_enable(VADRM
     "libva-drm"
     "Libva-drm"
+)
+ff_lib_enable(VAX11
+    "libva-x11"
+    "Libva-x11"
 )
 ff_lib_enable(VDPAU
     "vdpau"

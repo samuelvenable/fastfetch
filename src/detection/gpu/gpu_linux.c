@@ -72,7 +72,6 @@ FF_A_UNUSED static const char* drmFindRenderFromCard(const char* drmCardKey, FFs
 }
 
 static const char* drmDetectAmdSpecific(const FFGPUOptions* options, FFGPUResult* gpu, const char* drmKey, FFstrbuf* buffer) {
-#if FF_HAVE_DRM
     const char* error = drmFindRenderFromCard(drmKey, buffer);
     if (error) {
         return error;
@@ -80,17 +79,8 @@ static const char* drmDetectAmdSpecific(const FFGPUOptions* options, FFGPUResult
     if (ffStrbufEqualS(&gpu->driver, "radeon")) {
         return ffDrmDetectRadeon(options, gpu, buffer->chars);
     } else {
-    #if FF_HAVE_DRM_AMDGPU
         return ffDrmDetectAmdgpu(options, gpu, buffer->chars);
-    #else
-        FF_UNUSED(options, gpu, drmKey, buffer);
-        return "Fastfetch is not compiled with libdrm_amdgpu support";
-    #endif
     }
-#else
-    FF_UNUSED(options, gpu, drmKey, buffer);
-    return "Fastfetch is not compiled with drm support";
-#endif
 }
 
 static void pciDetectAmdSpecific(const FFGPUOptions* options, FFGPUResult* gpu, FFstrbuf* pciDir, FFstrbuf* buffer) {
@@ -546,6 +536,7 @@ static const char* detectOf(FFlist* gpus, FFstrbuf* buffer, FFstrbuf* drmDir, co
     gpu->type = FF_GPU_TYPE_INTEGRATED;
     gpu->dedicated.total = gpu->dedicated.used = gpu->shared.total = gpu->shared.used = FF_GPU_VMEM_SIZE_UNSET;
     gpu->frequency = FF_GPU_FREQUENCY_UNSET;
+    gpu->pcieSpeed = FF_GPU_PCIE_SPEED_UNSET;
 
     pciDetectDriver(&gpu->driver, drmDir, buffer, drmKey);
 
